@@ -7,6 +7,7 @@ export class FuturisticHoverCar {
   public angle: number = 0
   private hoverTime: number = 0
   private bodyTilt: number = 0
+  private bobCycle: number = 0
 
   // Constants
   private readonly MAX_SPEED = 1.2
@@ -15,6 +16,7 @@ export class FuturisticHoverCar {
   private readonly BRAKE_FORCE = 0.07
   private readonly FRICTION = 0.94
   private readonly TURN_RATE = 0.048
+  private readonly BASE_HOVER_HEIGHT = 0.7
 
   // Neon lights
   private frontLight!: THREE.PointLight
@@ -22,6 +24,7 @@ export class FuturisticHoverCar {
   private underglowLight!: THREE.PointLight
   private thrusterLights: THREE.PointLight[] = []
   private glowRings: THREE.Mesh[] = []
+  private thrusterPositions: [number, number, number][] = []
 
   constructor() {
     this.group = new THREE.Group()
@@ -104,14 +107,14 @@ export class FuturisticHoverCar {
     this.group.add(this.rearLight)
 
     // ─── 6. Hover Thrusters ────────────────────────────────────
-    const thrusterPositions = [
+    this.thrusterPositions = [
       [-0.85, -0.2, 1.1],   // front left
       [0.85, -0.2, 1.1],    // front right
       [-0.85, -0.2, -1.1],  // rear left
       [0.85, -0.2, -1.1]    // rear right
     ]
 
-    thrusterPositions.forEach((pos, index) => {
+    this.thrusterPositions.forEach((pos) => {
       const thrusterGroup = new THREE.Group()
       thrusterGroup.position.set(pos[0], pos[1], pos[2])
 
@@ -140,7 +143,7 @@ export class FuturisticHoverCar {
       thrusterGroup.add(glow)
       this.glowRings.push(glow)
 
-      // Thruster light
+      // Thruster point light (casts downward)
       const thrusterLight = new THREE.PointLight(0x00f3ff, 2, 3)
       thrusterLight.position.y = -0.3
       thrusterGroup.add(thrusterLight)
@@ -181,8 +184,8 @@ export class FuturisticHoverCar {
     shadow.position.y = -0.8
     this.group.add(shadow)
 
-    // Initial position
-    this.group.position.set(0, 0.5, 0)
+    // Initial position (elevated above grid)
+    this.group.position.set(0, this.BASE_HOVER_HEIGHT, 0)
   }
 
   public update(delta: number, controls: any) {
@@ -204,7 +207,7 @@ export class FuturisticHoverCar {
     }
 
     if (controls.reset) {
-      this.position.set(0, 0.5, 0)
+      this.position.set(0, this.BASE_HOVER_HEIGHT, 0)
       this.velocity = 0
       this.angle = 0
     }
@@ -224,30 +227,35 @@ export class FuturisticHoverCar {
     this.position.x = Math.max(-95, Math.min(95, this.position.x))
     this.position.z = Math.max(-95, Math.min(95, this.position.z))
 
-    // Rotation
+    // Rotation (yaw)
     this.group.rotation.y = this.angle
 
-    // Hover animation (vertical bobbing)
-    const hoverOffset = Math.sin(this.hoverTime) * 0.12 + 0.4
-    this.group.position.y = hoverOffset
+    // Smooth hover oscillation (sine wave around base height)
+    this.bobCycle = this.hoverTime
+    const hoverOffset = Math.sin(this.bobCycle) * 0.12
+    this.group.position.y = this.BASE_HOVER_HEIGHT + hoverOffset
 
-    // Slight tilt when moving
-    this.bodyTilt = Math.sin(this.hoverTime * 1.5) * 0.02
-    this.group.rotation.z = this.bodyTilt
+    // Dynamic tilt based on movement
+    const speedRatio = Math.abs(this.velocity) / this.MAX_SPEED
+    const forwardTilt = -speedRatio * 0.08  // pitch back when moving forward
+    const lateralTilt = (controls.left ? 1 : 0) - (controls.right ? 1 : 0)  // roll during turns
+
+    // Smooth tilt transitions
+    this.bodyTilt = THREE.MathUtils.lerp(this.bodyTilt, forwardTilt + lateralTilt * 0.04, delta * 8)
+    this.group.rotation.x = this.bodyTilt
+    this.group.rotation.z = THREE.MathUtils.lerp(this.group.rotation.z, lateralTilt * 0.03, delta * 6)
 
     // Animate neon intensity based on speed
-    const speedRatio = Math.abs(this.velocity) / this.MAX_SPEED
-
     this.glowRings.forEach(ring => {
-      (ring.material as THREE.MeshStandardMaterial).emissiveIntensity = 8 + speedRatio * 6
+      (ring.material as THREE.MeshStandardMaterial).emissiveIntensity = 8 + speedRatio * 8
     })
 
     this.thrusterLights.forEach(light => {
-      light.intensity = 2 + speedRatio * 3
+      light.intensity = 2 + speedRatio * 4
     })
 
-    this.frontLight.intensity = 3.5 + speedRatio * 2
+    this.frontLight.intensity = 3.5 + speedRatio * 2.5
     this.rearLight.intensity = 3 + speedRatio * 2
-    this.underglowLight.intensity = 5 + speedRatio * 3
+    this.underglowLight.intensity = 5 + speedRatio * 4
   }
 }

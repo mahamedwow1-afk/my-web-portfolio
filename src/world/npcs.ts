@@ -1,5 +1,4 @@
 import * as THREE from 'three'
-import { Testimonial } from './environment.js'
 
 export class NPC {
   public group: THREE.Group
@@ -13,182 +12,304 @@ export class NPC {
   private walkDirection: number = 0
   private walkSpeed: number = 0
   private waveTimer: number = 0
-  private isWaving: boolean = false
 
-  constructor(x: number, z: number, testimonial: Testimonial) {
+  // Character types for variety
+  private characterType: number = 0
+
+  constructor(x: number, z: number, testimonial: Testimonial, type: number = 0) {
     this.position = new THREE.Vector3(x, 0, z)
     this.testimonial = testimonial
+    this.characterType = type
     this.group = new THREE.Group()
     this.group.position.copy(this.position)
 
     this.walkDirection = Math.random() * Math.PI * 2
-    this.walkSpeed = 0.4 + Math.random() * 0.5
+    this.walkSpeed = 0.3 + Math.random() * 0.4
     this.idleTime = Math.random() * 10
 
     this.buildModel()
   }
 
   private buildModel() {
-    // ─── Skin Tone ──────────────────────────────────────────────
-    const skinColor = new THREE.Color().setHSL(0.08 + Math.random() * 0.05, 0.6, 0.65)
+    // Different skin tones based on character type
+    const skinTones = [
+      new THREE.Color(0xffdbac), // Light
+      new THREE.Color(0xd4a574), // Medium
+      new THREE.Color(0x8d5524), // Dark
+      new THREE.Color(0xc68642), // Olive
+      new THREE.Color(0xf1c27d)  // Wheat
+    ]
+    const skinColor = skinTones[this.characterType % skinTones.length]
 
-    // ─── Body/Torso ─────────────────────────────────────────────
-    const torsoGeo = new THREE.CylinderGeometry(0.35, 0.3, 0.9, 8)
+    // Clothing colors (neon cyberpunk style)
+    const clothingColors = [
+      new THREE.Color().setHSL(Math.random(), 0.8, 0.5),
+      new THREE.Color(0x00ffff), // Cyan
+      new THREE.Color(0xff00ff), // Magenta
+      new THREE.Color(0x00ff88), // Neon green
+      new THREE.Color(0xff8800)  // Orange
+    ]
+    const clothingColor = clothingColors[this.characterType % clothingColors.length]
+
+    // ─── Legs ───────────────────────────────────────────────────
+    const legGeo = new THREE.CylinderGeometry(0.08, 0.07, 0.65, 8)
+    const legMat = new THREE.MeshStandardMaterial({
+      color: 0x1a1a3e,
+      roughness: 0.7
+    })
+    this.legL = new THREE.Mesh(legGeo, legMat)
+    this.legL.position.set(-0.12, 0.33, 0)
+    this.group.add(this.legL)
+
+    this.legR = new THREE.Mesh(legGeo.clone(), legMat)
+    this.legR.position.set(0.12, 0.33, 0)
+    this.group.add(this.legR)
+
+    // Shoes (glowing)
+    const shoeGeo = new THREE.BoxGeometry(0.14, 0.08, 0.22)
+    const shoeMat = new THREE.MeshStandardMaterial({
+      color: clothingColor,
+      emissive: clothingColor,
+      emissiveIntensity: 0.4
+    })
+    const shoeL = new THREE.Mesh(shoeGeo, shoeMat)
+    shoeL.position.set(-0.12, 0.04, 0.03)
+    this.group.add(shoeL)
+
+    const shoeR = new THREE.Mesh(shoeGeo.clone(), shoeMat.clone())
+    shoeR.position.set(0.12, 0.04, 0.03)
+    this.group.add(shoeR)
+
+    // ─── Torso ──────────────────────────────────────────────────
+    const torsoGeo = new THREE.CylinderGeometry(0.28, 0.24, 0.85, 8)
     const torsoMat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color().setHSL(Math.random(), 0.8, 0.45),
-      emissive: new THREE.Color().setHSL(Math.random(), 0.9, 0.25),
-      emissiveIntensity: 0.4,
-      roughness: 0.5
+      color: clothingColor,
+      emissive: clothingColor,
+      emissiveIntensity: 0.25,
+      roughness: 0.5,
+      metalness: 0.3
     })
     const torso = new THREE.Mesh(torsoGeo, torsoMat)
-    torso.position.y = 1.1
+    torso.position.y = 1.05
     torso.castShadow = true
     this.group.add(torso)
 
+    // Jacket/hoodie details
+    const jacketGeo = new THREE.CylinderGeometry(0.32, 0.28, 0.5, 8)
+    const jacketMat = new THREE.MeshStandardMaterial({
+      color: clothingColor.clone().multiplyScalar(0.7),
+      emissive: clothingColor,
+      emissiveIntensity: 0.15,
+      roughness: 0.6
+    })
+    const jacket = new THREE.Mesh(jacketGeo, jacketMat)
+    jacket.position.y = 1.15
+    this.group.add(jacket)
+
+    // ─── Arms ───────────────────────────────────────────────────
+    const armGeo = new THREE.CylinderGeometry(0.06, 0.05, 0.6, 8)
+    const armMat = new THREE.MeshStandardMaterial({
+      color: clothingColor,
+      emissive: clothingColor,
+      emissiveIntensity: 0.2
+    })
+
+    this.armL = new THREE.Mesh(armGeo, armMat)
+    this.armL.position.set(-0.38, 1.0, 0)
+    this.armL.rotation.z = 0.2
+    this.group.add(this.armL)
+
+    this.armR = new THREE.Mesh(armGeo.clone(), armMat.clone())
+    this.armR.position.set(0.38, 1.0, 0)
+    this.armR.rotation.z = -0.2
+    this.group.add(this.armR)
+
+    // Hands
+    const handGeo = new THREE.SphereGeometry(0.07, 8, 8)
+    const handL = new THREE.Mesh(handGeo, new THREE.MeshStandardMaterial({ color: skinColor }))
+    handL.position.set(-0.42, 0.65, 0)
+    this.group.add(handL)
+
+    const handR = new THREE.Mesh(handGeo.clone(), new THREE.MeshStandardMaterial({ color: skinColor }))
+    handR.position.set(0.42, 0.65, 0)
+    this.group.add(handR)
+
     // ─── Head ───────────────────────────────────────────────────
-    const headGeo = new THREE.SphereGeometry(0.32, 16, 16)
+    const headGeo = new THREE.SphereGeometry(0.28, 16, 16)
     const headMat = new THREE.MeshStandardMaterial({
       color: skinColor,
       roughness: 0.6
     })
     const head = new THREE.Mesh(headGeo, headMat)
-    head.position.y = 1.85
+    head.position.y = 1.72
     head.castShadow = true
     this.group.add(head)
 
     // ─── Hair ───────────────────────────────────────────────────
-    const hairGeo = new THREE.SphereGeometry(0.34, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2)
-    const hairMat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color().setHSL(0.08 + Math.random() * 0.05, 0.7, 0.15),
-      roughness: 0.8
-    })
-    const hair = new THREE.Mesh(hairGeo, hairMat)
-    hair.position.y = 1.88
-    this.group.add(hair)
+    const hairStyles = [
+      () => this.createShortHair(skinColor),
+      () => this.createLongHair(skinColor),
+      () => this.createSpikyHair(skinColor),
+      () => this.createBald(skinColor),
+      () => this.createCurlyHair(skinColor)
+    ]
+    const createHair = hairStyles[this.characterType % hairStyles.length]
+    createHair()
 
     // ─── Eyes ───────────────────────────────────────────────────
-    const eyeGeo = new THREE.SphereGeometry(0.06, 12, 12)
-    const eyeMat = new THREE.MeshStandardMaterial({ color: 0x1a1a2e })
-    const eyeL = new THREE.Mesh(eyeGeo, eyeMat)
-    eyeL.position.set(-0.11, 1.9, 0.26)
-    this.group.add(eyeL)
-    const eyeR = eyeL.clone()
-    eyeR.position.set(0.11, 1.9, 0.26)
-    this.group.add(eyeR)
+    const eyeWhiteGeo = new THREE.SphereGeometry(0.065, 12, 12)
+    const eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff })
+    const eyeLWhite = new THREE.Mesh(eyeWhiteGeo, eyeWhiteMat)
+    eyeLWhite.position.set(-0.1, 1.76, 0.23)
+    this.group.add(eyeLWhite)
 
-    // Eye whites
-    const whiteGeo = new THREE.SphereGeometry(0.07, 12, 12)
-    const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff })
-    const whiteL = new THREE.Mesh(whiteGeo, whiteMat)
-    whiteL.position.set(-0.11, 1.9, 0.25)
-    this.group.add(whiteL)
-    const whiteR = whiteL.clone()
-    whiteR.position.set(0.11, 1.9, 0.25)
-    this.group.add(whiteR)
+    const eyeRWhite = new THREE.Mesh(eyeWhiteGeo.clone(), eyeWhiteMat)
+    eyeRWhite.position.set(0.1, 1.76, 0.23)
+    this.group.add(eyeRWhite)
+
+    const irisGeo = new THREE.SphereGeometry(0.04, 10, 10)
+    const irisColors = [0x4a3728, 0x1a1a2e, 0x2d5a27, 0x8b4513, 0x000000]
+    const irisMat = new THREE.MeshStandardMaterial({ color: irisColors[this.characterType % irisColors.length] })
+    const eyeLIris = new THREE.Mesh(irisGeo, irisMat)
+    eyeLIris.position.set(-0.1, 1.76, 0.27)
+    this.group.add(eyeLIris)
+
+    const eyeRIris = new THREE.Mesh(irisGeo.clone(), irisMat.clone())
+    eyeRIris.position.set(0.1, 1.76, 0.27)
+    this.group.add(eyeRIris)
 
     // Eye shine
-    const shineGeo = new THREE.SphereGeometry(0.02, 6, 6)
+    const shineGeo = new THREE.SphereGeometry(0.015, 6, 6)
     const shineMat = new THREE.MeshBasicMaterial({ color: 0xffffff })
     const shineL = new THREE.Mesh(shineGeo, shineMat)
-    shineL.position.set(-0.09, 1.93, 0.29)
+    shineL.position.set(-0.085, 1.78, 0.29)
     this.group.add(shineL)
-    const shineR = shineL.clone()
-    shineR.position.set(0.13, 1.93, 0.29)
+
+    const shineR = new THREE.Mesh(shineGeo.clone(), shineMat.clone())
+    shineR.position.set(0.115, 1.78, 0.29)
     this.group.add(shineR)
 
-    // ─── Smile ──────────────────────────────────────────────────
-    const smileGeo = new THREE.TorusGeometry(0.08, 0.02, 8, 12, Math.PI)
+    // ─── Mouth (smile) ──────────────────────────────────────────
+    const smileGeo = new THREE.TorusGeometry(0.06, 0.015, 8, 12, Math.PI)
     const smileMat = new THREE.MeshStandardMaterial({ color: 0xcc4444 })
     const smile = new THREE.Mesh(smileGeo, smileMat)
-    smile.position.set(0, 1.75, 0.28)
+    smile.position.set(0, 1.62, 0.24)
     smile.rotation.x = Math.PI
     this.group.add(smile)
 
-    // ─── Arms ───────────────────────────────────────────────────
-    const armGeo = new THREE.CylinderGeometry(0.07, 0.06, 0.7, 8)
-    const armMat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color().setHSL(Math.random(), 0.7, 0.4),
-      emissive: new THREE.Color().setHSL(Math.random(), 0.8, 0.2),
-      emissiveIntensity: 0.3
-    })
-
-    const armL = new THREE.Mesh(armGeo, armMat)
-    armL.position.set(-0.42, 1.15, 0)
-    armL.rotation.z = 0.15
-    this.group.add(armL)
-    this.armL = armL
-
-    const armR = new THREE.Mesh(armGeo, armMat.clone())
-    armR.position.set(0.42, 1.15, 0)
-    armR.rotation.z = -0.15
-    this.group.add(armR)
-    this.armR = armR
-
-    // Hands
-    const handGeo = new THREE.SphereGeometry(0.08, 8, 8)
-    const handL = new THREE.Mesh(handGeo, new THREE.MeshStandardMaterial({ color: skinColor }))
-    handL.position.set(-0.45, 0.75, 0)
-    this.group.add(handL)
-    this.handL = handL
-
-    const handR = new THREE.Mesh(handGeo, new THREE.MeshStandardMaterial({ color: skinColor }))
-    handR.position.set(0.45, 0.75, 0)
-    this.group.add(handR)
-    this.handR = handR
-
-    // ─── Legs ───────────────────────────────────────────────────
-    const legGeo = new THREE.CylinderGeometry(0.1, 0.09, 0.7, 8)
-    const legMat = new THREE.MeshStandardMaterial({ color: 0x1a1a3e })
-
-    const legL = new THREE.Mesh(legGeo, legMat)
-    legL.position.set(-0.15, 0.35, 0)
-    this.group.add(legL)
-    this.legL = legL
-
-    const legR = new THREE.Mesh(legGeo, legMat)
-    legR.position.set(0.15, 0.35, 0)
-    this.group.add(legR)
-    this.legR = legR
-
-    // Shoes
-    const shoeGeo = new THREE.BoxGeometry(0.15, 0.08, 0.25)
-    const shoeMat = new THREE.MeshStandardMaterial({
-      color: 0x00ffff,
-      emissive: 0x00ffff,
-      emissiveIntensity: 0.5
-    })
-    const shoeL = new THREE.Mesh(shoeGeo, shoeMat)
-    shoeL.position.set(-0.15, 0.04, 0.05)
-    this.group.add(shoeL)
-
-    const shoeR = new THREE.Mesh(shoeGeo, shoeMat.clone())
-    shoeR.position.set(0.15, 0.04, 0.05)
-    this.group.add(shoeR)
-
     // ─── Glow Ring ──────────────────────────────────────────────
-    const ringGeo = new THREE.TorusGeometry(0.45, 0.05, 8, 16)
+    const ringGeo = new THREE.TorusGeometry(0.42, 0.04, 8, 16)
     const ringMat = new THREE.MeshStandardMaterial({
       color: 0x00ffff,
       emissive: 0x00ffff,
-      emissiveIntensity: 2
+      emissiveIntensity: 2.5
     })
-    const ring = new THREE.Mesh(ringGeo, ringMat)
-    ring.rotation.x = Math.PI / 2
-    ring.position.y = 0.05
-    this.group.add(ring)
-    this.ring = ring
+    this.ring = new THREE.Mesh(ringGeo, ringMat)
+    this.ring.rotation.x = Math.PI / 2
+    this.ring.position.y = 0.05
+    this.group.add(this.ring)
 
     // ─── Point Light ────────────────────────────────────────────
-    const light = new THREE.PointLight(0x00ffff, 0, 8)
-    light.position.y = 2
-    this.group.add(light)
-    this.light = light
+    this.light = new THREE.PointLight(0x00ffff, 0, 8)
+    this.light.position.y = 2
+    this.group.add(this.light)
+  }
+
+  // Hair style creators
+  private createShortHair(skinColor: THREE.Color) {
+    const hairGeo = new THREE.SphereGeometry(0.3, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2)
+    const hairMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color().setHSL(Math.random(), 0.7, 0.15),
+      roughness: 0.8
+    })
+    const hair = new THREE.Mesh(hairGeo, hairMat)
+    hair.position.y = 1.75
+    this.group.add(hair)
+  }
+
+  private createLongHair(skinColor: THREE.Color) {
+    const hairGeo = new THREE.SphereGeometry(0.32, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2)
+    const hairMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color().setHSL(Math.random(), 0.6, 0.12),
+      roughness: 0.8
+    })
+    const hair = new THREE.Mesh(hairGeo, hairMat)
+    hair.position.y = 1.76
+    this.group.add(hair)
+
+    // Long hair back
+    const backGeo = new THREE.CylinderGeometry(0.25, 0.15, 0.8, 8)
+    const backHair = new THREE.Mesh(backGeo, hairMat)
+    backHair.position.set(0, 1.45, -0.15)
+    this.group.add(backHair)
+  }
+
+  private createSpikyHair(skinColor: THREE.Color) {
+    const baseGeo = new THREE.SphereGeometry(0.3, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2)
+    const baseMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color().setHSL(Math.random(), 0.8, 0.25),
+      roughness: 0.7
+    })
+    const base = new THREE.Mesh(baseGeo, baseMat)
+    base.position.y = 1.76
+    this.group.add(base)
+
+    // Spikes
+    for (let i = 0; i < 5; i++) {
+      const spikeGeo = new THREE.ConeGeometry(0.06, 0.2, 6)
+      const spike = new THREE.Mesh(spikeGeo, baseMat)
+      const angle = (i / 5) * Math.PI - Math.PI / 2
+      spike.position.set(
+        Math.sin(angle) * 0.15,
+        1.95,
+        Math.cos(angle) * 0.15 - 0.05
+      )
+      spike.rotation.z = -angle * 0.5
+      this.group.add(spike)
+    }
+  }
+
+  private createBald(skinColor: THREE.Color) {
+    // Just the head, maybe some sideburns
+    const sideburnGeo = new THREE.BoxGeometry(0.05, 0.12, 0.05)
+    const sideburnMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color().setHSL(Math.random(), 0.6, 0.15),
+      roughness: 0.8
+    })
+    const sbL = new THREE.Mesh(sideburnGeo, sideburnMat)
+    sbL.position.set(-0.26, 1.78, 0)
+    this.group.add(sbL)
+    const sbR = sbL.clone()
+    sbR.position.set(0.26, 1.78, 0)
+    this.group.add(sbR)
+  }
+
+  private createCurlyHair(skinColor: THREE.Color) {
+    const baseGeo = new THREE.SphereGeometry(0.34, 12, 12)
+    const hairMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color().setHSL(Math.random(), 0.7, 0.12),
+      roughness: 0.9
+    })
+    const base = new THREE.Mesh(baseGeo, hairMat)
+    base.position.y = 1.78
+    this.group.add(base)
+
+    // Curly bumps
+    for (let i = 0; i < 8; i++) {
+      const curlGeo = new THREE.SphereGeometry(0.08, 8, 8)
+      const curl = new THREE.Mesh(curlGeo, hairMat)
+      const angle = (i / 8) * Math.PI * 2
+      curl.position.set(
+        Math.cos(angle) * 0.25,
+        1.85 + Math.sin(angle * 2) * 0.05,
+        Math.sin(angle) * 0.25
+      )
+      this.group.add(curl)
+    }
   }
 
   private armL!: THREE.Mesh
   private armR!: THREE.Mesh
-  private handL!: THREE.Mesh
-  private handR!: THREE.Mesh
   private legL!: THREE.Mesh
   private legR!: THREE.Mesh
   private ring!: THREE.Mesh
@@ -215,17 +336,19 @@ export class NPC {
   private createSpeechBubble(): THREE.Group {
     const group = new THREE.Group()
 
-    // Bubble background (rounded)
-    const bubbleGeo = new THREE.BoxGeometry(5, 2.8, 0.2, 4, 4, 1)
+    // Bubble background
+    const bubbleGeo = new THREE.BoxGeometry(5.5, 3.2, 0.25, 4, 4, 1)
     const bubbleMat = new THREE.MeshStandardMaterial({
       color: 0x0a0014,
       emissive: 0x2d1b69,
-      emissiveIntensity: 0.6,
-      roughness: 0.2,
-      metalness: 0.8
+      emissiveIntensity: 0.7,
+      roughness: 0.15,
+      metalness: 0.85,
+      transparent: true,
+      opacity: 0.95
     })
     const bubble = new THREE.Mesh(bubbleGeo, bubbleMat)
-    bubble.position.y = 4
+    bubble.position.y = 4.2
     group.add(bubble)
 
     // Neon border
@@ -235,55 +358,55 @@ export class NPC {
       linewidth: 2
     })
     const edge = new THREE.LineSegments(edgeGeo, edgeMat)
-    edge.position.y = 4
+    edge.position.y = 4.2
     group.add(edge)
 
     // Stars
     const stars = this.testimonial.rating || 5
     const starCanvas = this.createStarCanvas(stars)
     const starTex = new THREE.CanvasTexture(starCanvas)
-    const starGeo = new THREE.PlaneGeometry(3.5, 0.6)
+    const starGeo = new THREE.PlaneGeometry(4, 0.7)
     const starMat = new THREE.MeshBasicMaterial({ map: starTex, transparent: true })
     const starMesh = new THREE.Mesh(starGeo, starMat)
-    starMesh.position.set(0, 4.9, 0.11)
+    starMesh.position.set(0, 5.4, 0.13)
     group.add(starMesh)
 
     // Name
-    const nameCanvas = this.createTextCanvas(this.testimonial.name, 512, 64, '#00ffff', 32)
+    const nameCanvas = this.createTextCanvas(this.testimonial.name, 512, 64, '#00ffff', 36)
     const nameTex = new THREE.CanvasTexture(nameCanvas)
-    const nameGeo = new THREE.PlaneGeometry(3, 0.6)
+    const nameGeo = new THREE.PlaneGeometry(3.5, 0.6)
     const nameMat = new THREE.MeshBasicMaterial({ map: nameTex, transparent: true })
     const nameMesh = new THREE.Mesh(nameGeo, nameMat)
-    nameMesh.position.set(0, 4.4, 0.11)
+    nameMesh.position.set(0, 4.8, 0.13)
     group.add(nameMesh)
 
     // Role
-    const roleCanvas = this.createTextCanvas(this.testimonial.role, 512, 48, '#ff00ff', 24)
+    const roleCanvas = this.createTextCanvas(this.testimonial.role, 512, 48, '#ff00ff', 26)
     const roleTex = new THREE.CanvasTexture(roleCanvas)
-    const roleGeo = new THREE.PlaneGeometry(4, 0.5)
+    const roleGeo = new THREE.PlaneGeometry(4.5, 0.5)
     const roleMat = new THREE.MeshBasicMaterial({ map: roleTex, transparent: true })
     const roleMesh = new THREE.Mesh(roleGeo, roleMat)
-    roleMesh.position.set(0, 4.0, 0.11)
+    roleMesh.position.set(0, 4.3, 0.13)
     group.add(roleMesh)
 
     // Text
-    const textCanvas = this.createTextCanvas(this.testimonial.text, 1024, 256, '#ffffff', 28)
+    const textCanvas = this.createTextCanvas(this.testimonial.text, 1024, 256, '#ffffff', 30)
     const textTex = new THREE.CanvasTexture(textCanvas)
-    const textGeo = new THREE.PlaneGeometry(4.5, 1.2)
+    const textGeo = new THREE.PlaneGeometry(5, 1.3)
     const textMat = new THREE.MeshBasicMaterial({ map: textTex, transparent: true })
     const textMesh = new THREE.Mesh(textGeo, textMat)
-    textMesh.position.set(0, 3.3, 0.11)
+    textMesh.position.set(0, 3.5, 0.13)
     group.add(textMesh)
 
-    // Waving hand indicator
-    const waveGeo = new THREE.SphereGeometry(0.2, 8, 8)
+    // Waving indicator
+    const waveGeo = new THREE.SphereGeometry(0.25, 8, 8)
     const waveMat = new THREE.MeshStandardMaterial({
       color: 0xffddaa,
       emissive: 0xffaa00,
-      emissiveIntensity: 0.3
+      emissiveIntensity: 0.4
     })
     const wave = new THREE.Mesh(waveGeo, waveMat)
-    wave.position.set(2.6, 3.5, 0)
+    wave.position.set(3, 3.8, 0)
     wave.visible = false
     group.add(wave)
     this.waveIndicator = wave
@@ -299,7 +422,7 @@ export class NPC {
     canvas.height = 64
     const ctx = canvas.getContext('2d')!
     ctx.fillStyle = '#ffd700'
-    ctx.font = 'bold 48px Segoe UI'
+    ctx.font = 'bold 52px Segoe UI'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     const stars = '★'.repeat(count) + '☆'.repeat(5 - count)
@@ -313,7 +436,6 @@ export class NPC {
     canvas.height = height
     const ctx = canvas.getContext('2d')!
 
-    // RTL support for Arabic
     ctx.direction = 'rtl'
     ctx.fillStyle = color
     ctx.font = `bold ${fontSize}px Segoe UI, system-ui, sans-serif`
@@ -340,9 +462,9 @@ export class NPC {
     this.group.position.x += moveX
     this.group.position.z += moveZ
 
-    // Keep within bounds
-    this.group.position.x = Math.max(-100, Math.min(100, this.group.position.x))
-    this.group.position.z = Math.max(-100, Math.min(100, this.group.position.z))
+    // Bounds
+    this.group.position.x = Math.max(-90, Math.min(90, this.group.position.x))
+    this.group.position.z = Math.max(-90, Math.min(90, this.group.position.z))
 
     // Face walking direction
     this.group.rotation.y = this.walkDirection
@@ -358,16 +480,16 @@ export class NPC {
       this.legR.rotation.x = walkCycle * 0.5
     }
 
-    // Wave when activated
+    // Wave animation
     if (this.visible && this.waveIndicator) {
       this.waveTimer += delta
-      this.waveIndicator.position.y = 3.5 + Math.sin(this.waveTimer * 4) * 0.3
+      this.waveIndicator.position.y = 3.8 + Math.sin(this.waveTimer * 5) * 0.4
       this.waveIndicator.visible = true
     }
 
     // Pulse ring
     if (this.ring) {
-      (this.ring.material as THREE.MeshStandardMaterial).emissiveIntensity = 1.5 + Math.sin(this.bobTime * 2) * 0.5
+      (this.ring.material as THREE.MeshStandardMaterial).emissiveIntensity = 2 + Math.sin(this.bobTime * 2) * 0.8
     }
   }
 
@@ -381,7 +503,7 @@ export const testimonials: Testimonial[] = [
   {
     name: 'أحمد',
     role: 'عميل — القاهرة',
-    text: 'محمد محترف جدااً! الشغل كان خرافي',
+    text: 'محمد محترف جداااً! الشغل كان خرافي',
     rating: 5
   },
   {
@@ -422,13 +544,20 @@ export const testimonials: Testimonial[] = [
   }
 ]
 
+export interface Testimonial {
+  name: string
+  role: string
+  text: string
+  rating?: number
+}
+
 export function createNPCZones(scene: THREE.Scene): NPC[] {
   const npcs: NPC[] = []
 
-  // Random positions within world bounds
+  // Random positions
   const positions = testimonials.map((_, i) => {
     const angle = (i / testimonials.length) * Math.PI * 2 + Math.random() * 0.8
-    const dist = 15 + Math.random() * 60
+    const dist = 18 + Math.random() * 55
     return {
       x: Math.cos(angle) * dist,
       z: Math.sin(angle) * dist
@@ -437,7 +566,7 @@ export function createNPCZones(scene: THREE.Scene): NPC[] {
 
   testimonials.forEach((t, i) => {
     const pos = positions[i]
-    const npc = new NPC(pos.x, pos.z, t)
+    const npc = new NPC(pos.x, pos.z, t, i % 5) // Different character types
     scene.add(npc.group)
     npcs.push(npc)
   })

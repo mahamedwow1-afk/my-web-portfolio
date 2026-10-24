@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { setLocale, initI18n } from './i18n/index.js'
 import { profile } from './data/profile.js'
-import { HoverCar, HoverCarControls } from './vehicle/car.js'
+import { Cybercab } from './world/car.js'
 import { createSynthwaveEnvironment } from './world/environment.js'
 import { createNPCZones } from './world/npcs.js'
 
@@ -24,8 +24,8 @@ document.body.appendChild(renderer.domElement)
 // ─── Synthwave Environment ──────────────────────────────────
 createSynthwaveEnvironment(scene)
 
-// ─── Hover Car ──────────────────────────────────────────────
-const car = new HoverCar()
+// ─── Cybercab ───────────────────────────────────────────────
+const car = new Cybercab()
 scene.add(car.group)
 
 // ─── Zone System ────────────────────────────────────────────
@@ -93,7 +93,7 @@ const keys: Record<string, boolean> = {}
 window.addEventListener('keydown', e => { keys[e.code] = true })
 window.addEventListener('keyup', e => { keys[e.code] = false })
 
-function getControls(): HoverCarControls {
+function getControls() {
   return {
     forward: keys['KeyW'] || keys['ArrowUp'],
     backward: keys['KeyS'] || keys['ArrowDown'],

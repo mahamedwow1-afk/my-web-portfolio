@@ -346,6 +346,62 @@ function populateContactPanel() {
   `
 }
 
+// ─── Classic View Population ────────────────────────────────
+function populateClassicView() {
+  const projectsContainer = document.getElementById('classic-projects')
+  if (projectsContainer) {
+    projectsContainer.innerHTML = profile.projects.map(p => `
+      <div class="project-card">
+        <div class="project-header">
+          <span class="project-category">${p.category}</span>
+          <span class="project-title">${p.title}</span>
+        </div>
+        <p class="project-desc">${p.longDescription || p.description}</p>
+        <div class="tech-stack">
+          ${p.techStack.map(t => `<span class="tag">${t}</span>`).join('')}
+        </div>
+        <a href="${p.githubUrl}" target="_blank" rel="noopener" class="project-link">View on GitHub →</a>
+      </div>
+    `).join('')
+  }
+
+  const skillsContainer = document.getElementById('classic-skills')
+  if (skillsContainer) {
+    skillsContainer.innerHTML = `
+      <div class="skill-group">
+        <h4>Languages</h4>
+        <div class="skill-tags">${profile.skills.languages.map(s => `<span class="tag">${s}</span>`).join('')}</div>
+      </div>
+      <div class="skill-group">
+        <h4>Frameworks</h4>
+        <div class="skill-tags">${profile.skills.frameworks.map(s => `<span class="tag">${s}</span>`).join('')}</div>
+      </div>
+      <div class="skill-group">
+        <h4>Tools</h4>
+        <div class="skill-tags">${profile.skills.tools.map(s => `<span class="tag">${s}</span>`).join('')}</div>
+      </div>
+    `
+  }
+
+  const experienceContainer = document.getElementById('classic-experience')
+  if (experienceContainer) {
+    experienceContainer.innerHTML = profile.experience.map(exp => `
+      <div class="timeline-item">
+        <div class="timeline-header">
+          <span class="role">${exp.role}</span>
+          <span class="period">${exp.period}</span>
+        </div>
+        <div class="org">${exp.organization}</div>
+        <p class="desc">${exp.description}</p>
+        <div class="technologies">
+          ${exp.technologies.map(t => `<span class="tag">${t}</span>`).join('')}
+        </div>
+      </div>
+    `).join('')
+  }
+}
+populateClassicView()
+
 // Initialize all panels
 populateAboutPanel()
 populateProjectsPanel()

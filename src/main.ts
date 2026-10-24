@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { setLocale, initI18n } from './i18n/index.js'
 import { profile } from './data/profile.js'
-import { Cybercar } from './world/car.js'
+import { FuturisticHoverCar } from './world/car.js'
 import { createNPCZones } from './world/npcs.js'
 import { SynthwaveWorld } from './world/synthwave-world.js'
 
@@ -28,8 +28,8 @@ document.body.appendChild(renderer.domElement)
 const synthwaveWorld = new SynthwaveWorld(scene, camera, renderer)
 synthwaveWorld.init()
 
-// ─── Create Cybercar ─────────────────────────────────────────
-const car = new Cybercar()
+// ─── Create Futuristic Hover Car ─────────────────────────────
+const car = new FuturisticHoverCar()
 scene.add(car.group)
 
 // ─── Zone System ──────────────────────────────────────────────

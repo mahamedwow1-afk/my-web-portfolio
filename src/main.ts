@@ -3,7 +3,11 @@ import { setLocale, initI18n } from './i18n/index.js'
 import { profile } from './data/profile.js'
 import { FuturisticHoverCar } from './world/car.js'
 import { createNPCZones } from './world/npcs.js'
+import { createTestimonialCharacters, CHARACTERS_DATA } from './world/testimonials.js'
 import { SynthwaveWorld } from './world/synthwave-world.js'
+
+const raycaster = new THREE.Raycaster()
+const mouse = new THREE.Vector2()
 
 // ─── Scene Setup ──────────────────────────────────────────────
 const scene = new THREE.Scene()
@@ -109,6 +113,35 @@ createZoneMarker(0, -38, 0x10b981, 'contact')
 // ─── NPCs ─────────────────────────────────────────────────────
 const npcs = createNPCZones(scene)
 
+// ─── Testimonial Characters ───────────────────────────────────
+const testimonialChars = createTestimonialCharacters(scene)
+let activeTestimonial: string | null = null
+
+// ─── Testimonial Panel ────────────────────────────────────────
+function showTestimonialPanel(data: typeof CHARACTERS_DATA[0]) {
+  const panel = document.getElementById('testimonial-panel')
+  if (!panel) return
+  activeTestimonial = data.id.toString()
+  panel.innerHTML = `
+    <button class="close-btn" onclick="closeZone()">✕</button>
+    <img class="avatar" src="${data.avatarUrl}" alt="${data.name}"
+         onerror="this.onerror=null;this.src='data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><rect width=%27100%27 height=%27100%27 fill=%27${data.color}%27/><text x=%2750%25%27 y=%2755%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-size=%2750%27 fill=%27%23fff%27 font-weight=%27bold%27>${data.name.charAt(0)}</text></svg>';">
+    <h2 style="color:${data.color}">${data.name}</h2>
+    <p class="subtitle" style="color:#94a3b8">${data.role}</p>
+    <div class="stars" style="color:#ffd700;font-size:1.2rem;margin:12px 0;">${'★'.repeat(data.rating)}</div>
+    <p class="review" style="color:#cbd5e1;line-height:1.8;margin-bottom:16px;">${data.review}</p>
+    <p class="full-review" style="color:#94a3b8;font-size:0.9rem;line-height:1.7;margin-bottom:16px;">${data.fullReview}</p>
+    <p class="location" style="color:#64748b;font-size:0.85rem;">📍 ${data.location}</p>
+  `
+  panel.classList.add('active')
+}
+
+function hideTestimonialPanel() {
+  const panel = document.getElementById('testimonial-panel')
+  if (panel) panel.classList.remove('active')
+  activeTestimonial = null
+}
+
 // ─── Controls ─────────────────────────────────────────────────
 const keys: Record<string, boolean> = {}
 window.addEventListener('keydown', e => { keys[e.code] = true })
@@ -166,6 +199,13 @@ function checkZones() {
 }
 
 // ─── Populate Panels ──────────────────────────────────────────
+// Override closeZone to also hide testimonial panel
+const _origCloseZone = window.closeZone
+window.closeZone = () => {
+  _origCloseZone()
+  hideTestimonialPanel()
+}
+
 function populateAboutPanel() {
   const container = document.getElementById('about-content')
   if (!container) return
@@ -424,7 +464,42 @@ function updateNPCs() {
     }
     npc.update(0.016, carPos)
   })
+
+  testimonialChars.forEach(char => {
+    char.update(0.016, carPos, NPC_NEAR)
+  })
 }
+
+// ─── Click Handler for Testimonials ──────────────────────────
+renderer.domElement.addEventListener('click', (e) => {
+  if (activeZone) return
+  for (const char of testimonialChars) {
+    const data = char.handleClick(e, camera, renderer)
+    if (data) {
+      showTestimonialPanel(data)
+      break
+    }
+  }
+})
+
+renderer.domElement.addEventListener('pointermove', (e) => {
+  const rect = renderer.domElement.getBoundingClientRect()
+  mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1
+  mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1
+  raycaster.setFromCamera(mouse, camera)
+
+  let hovering = false
+  for (const char of testimonialChars) {
+    const intersects = raycaster.intersectObjects(char.clickableObjects, true)
+    if (intersects.length > 0) {
+      hovering = true
+      char.handlePointerOver()
+    } else {
+      char.handlePointerOut()
+    }
+  }
+  renderer.domElement.style.cursor = hovering ? 'pointer' : 'default'
+})
 
 // ─── Animation Loop ───────────────────────────────────────────
 const clock = new THREE.Clock()

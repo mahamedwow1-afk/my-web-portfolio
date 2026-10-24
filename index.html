@@ -65,6 +65,48 @@
       scrollbar-width: thin;
       scrollbar-color: #334155 transparent;
     }
+
+    /* Testimonial Panel */
+    .testimonial-panel {
+      position: absolute; right: 24px; top: 80px;
+      width: 380px; max-height: calc(100vh - 120px); overflow-y: auto;
+      background: rgba(17, 18, 24, 0.92); backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 16px;
+      padding: 28px; color: #e2e8f0;
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+      opacity: 0; transform: translateY(-10px) translateX(20px);
+      scrollbar-width: thin;
+      scrollbar-color: #334155 transparent;
+      pointer-events: none;
+    }
+    .testimonial-panel.active {
+      opacity: 1; transform: translateY(0) translateX(0);
+      pointer-events: auto;
+    }
+    .testimonial-panel .avatar {
+      width: 80px; height: 80px; border-radius: 50%;
+      border: 3px solid; margin: 0 auto 16px; display: block;
+      object-fit: cover;
+    }
+    .testimonial-panel h2 {
+      text-align: center; font-size: 1.4rem; margin-bottom: 4px;
+    }
+    .testimonial-panel .subtitle {
+      text-align: center; font-size: 0.9rem; margin-bottom: 8px;
+    }
+    .testimonial-panel .stars { text-align: center; }
+    .testimonial-panel .review {
+      text-align: center; font-size: 1rem; margin-bottom: 12px;
+      font-weight: 500;
+    }
+    .testimonial-panel .full-review {
+      text-align: justify; font-size: 0.88rem;
+      background: rgba(255,255,255,0.03); padding: 14px; border-radius: 10px;
+      border-left: 3px solid rgba(255,255,255,0.1);
+    }
+    .testimonial-panel .location {
+      text-align: center; margin-top: 12px;
+    }
     .zone-panel::-webkit-scrollbar { width: 6px; }
     .zone-panel::-webkit-scrollbar-track { background: transparent; }
     .zone-panel::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
@@ -312,6 +354,12 @@
       <button class="close-btn" onclick="closeZone()">✕</button>
       <h2>Contact</h2>
       <div id="contact-content"></div>
+    </div>
+
+    <!-- Testimonial Panel -->
+    <div class="testimonial-panel" id="testimonial-panel">
+      <button class="close-btn" onclick="closeZone()">✕</button>
+      <div id="testimonial-content"></div>
     </div>
 
     <!-- Minimap -->

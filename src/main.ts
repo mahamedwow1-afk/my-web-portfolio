@@ -4,6 +4,8 @@ import { profile } from './data/profile.js'
 import { FuturisticHoverCar } from './world/car.js'
 import { createNPCZones } from './world/npcs.js'
 import { createTestimonialCharacters, CHARACTERS_DATA } from './world/testimonials.js'
+import { createSpaceshipTraffic } from './world/spaceships.js'
+import { createMiniGameElements } from './world/minigames.js'
 import { SynthwaveWorld } from './world/synthwave-world.js'
 
 const raycaster = new THREE.Raycaster()
@@ -117,6 +119,12 @@ const npcs = createNPCZones(scene)
 const testimonialChars = createTestimonialCharacters(scene)
 window.testimonialChars = testimonialChars
 let activeTestimonial: string | null = null
+
+// ─── Spaceship Traffic ────────────────────────────────────────
+const ships = createSpaceshipTraffic(scene, 4)
+
+// ─── Mini-game Elements ───────────────────────────────────────
+const { ramps, rings } = createMiniGameElements(scene)
 
 // ─── Testimonial Panel ────────────────────────────────────────
 function showTestimonialPanel(data: typeof CHARACTERS_DATA[0]) {
@@ -425,7 +433,7 @@ function drawMinimap() {
   mmCtx.fillStyle = 'rgba(9, 7, 27, 0.95)'
   mmCtx.fillRect(0, 0, 160, 160)
 
-  const scale = 0.55
+  const scale = 0.38
   const cx = 80, cy = 80
 
   zones.forEach(zone => {
@@ -524,6 +532,12 @@ function animate() {
 
   // Update synthwave world
   synthwaveWorld.update(time)
+
+  // Animate spaceships
+  ships.forEach(ship => ship.update(delta))
+
+  // Animate mini-game rings
+  rings.forEach(ring => ring.update(delta))
 
   renderer.render(scene, camera)
 }

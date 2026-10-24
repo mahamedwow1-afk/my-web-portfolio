@@ -19,56 +19,56 @@ export const CHARACTERS_DATA: TestimonialData[] = [
     review: 'إبداع وتصميم سابق لعصره! 🔥',
     fullReview: 'محمد محترف جداً في التصميم. قدم لي مشروع بتصميم يتجاوز التوقعات مع اهتمامه بأدق التفاصيل. أنصح به بشدة لكل من يبحث عن جودة استثنائية.',
     rating: 5, avatarUrl: 'https://i.pravatar.cc/150?img=11', location: 'القاهرة، مصر',
-    pos: [-12, 0, -8], color: '#ff007f'
+    pos: [-75, 0, -60], color: '#ff007f'
   },
   {
     id: 2, name: 'أحمد محمود', role: 'Full-Stack Developer',
     review: 'موقع رهيب وتجربة تفاعلية ممتعة! 🚀',
     fullReview: 'شغل احترافي على أعلى مستوى. الموقع سريع، متجاوب، والتجربة التفاعلية كانت مذهلة. كل شيء سلس ومُحسن بشكل ممتاز.',
     rating: 5, avatarUrl: 'https://i.pravatar.cc/150?img=12', location: 'دبي، الإمارات',
-    pos: [12, 0, -10], color: '#00f3ff'
+    pos: [80, 0, -45], color: '#00f3ff'
   },
   {
     id: 3, name: 'فريق عمل TechFlow', role: 'Tech Lead',
     review: 'تجربة مستخدم أسطورية! ✨',
     fullReview: 'تعاملنا مع محمد في عدة مشاريع وكانت النتائج دائماً تفوق التوقعات. فهم عميق لاحتياجات المستخدم وتنفيذ دقيق في الوقت المحدد.',
     rating: 5, avatarUrl: 'https://i.pravatar.cc/150?img=13', location: 'الرياض، السعودية',
-    pos: [0, 0, -18], color: '#ffd700'
+    pos: [-55, 0, 70], color: '#ffd700'
   },
   {
     id: 4, name: 'م. محمود علي', role: 'Product Manager',
     review: 'سرعة وسلاسة ممتازة في الأداء. 👏',
     fullReview: 'من أفضل المطورين الذين تعاملت معهم. السرعة في الإنجاز مع الحفاظ على أعلى جودة. المشروع تم تسليمه قبل الموعد المحدد وبشكل مثالي.',
     rating: 5, avatarUrl: 'https://i.pravatar.cc/150?img=14', location: 'الكويت',
-    pos: [-18, 0, 5], color: '#a200ff'
+    pos: [65, 0, 55], color: '#a200ff'
   },
   {
     id: 5, name: 'Karen Smith', role: 'Frontend Developer',
     review: 'Amazing interactive 3D portfolio! 🎨',
     fullReview: 'Absolutely blown away by the quality of work. The 3D interactions are smooth, the design is modern, and the attention to detail is remarkable. Highly recommended for any creative project.',
     rating: 5, avatarUrl: 'https://i.pravatar.cc/150?img=15', location: 'London, UK',
-    pos: [18, 0, 8], color: '#00ff66'
+    pos: [-80, 0, 10], color: '#00ff66'
   },
   {
     id: 6, name: 'عمر حسن', role: 'Game Developer',
     review: 'الفيزيكا والتحكم في العربية ممتاز! 🏎️',
     fullReview: 'كلاعب ومتصفح، الانطباع الأول كان رائعاً. حركة السيارة سلسة والفيزيكا واقعية. التحكم بالأسهم работал بدون أي تقطيع. شغل هندسي ممتاز.',
     rating: 5, avatarUrl: 'https://i.pravatar.cc/150?img=16', location: 'بيروت، لبنان',
-    pos: [-8, 0, 15], color: '#ff5500'
+    pos: [40, 0, -75], color: '#ff5500'
   },
   {
     id: 7, name: 'ليلى خالد', role: 'Art Director',
     review: 'الألوان والمود الفضائي يجنن! 🌌',
     fullReview: 'من الناحية الفنية، هذا العمل يستحق الإعجاب. توزيع الألوان النيوني متناسق، والإضاءة تعطي عمق رائع للمشهد. الإحساس البصري فريد ومميز.',
     rating: 5, avatarUrl: 'https://i.pravatar.cc/150?img=17', location: 'عمان، الأردن',
-    pos: [10, 0, 18], color: '#ff00bb'
+    pos: [-35, 0, 80], color: '#ff00bb'
   },
   {
     id: 8, name: 'م. يوسف إبراهيم', role: 'CTO',
     review: 'شغل احترافي على أعلى مستوى! 💎',
     fullReview: 'كقائد تقني، أقدّر الدقة والاحترافية. الكود نظيف، الأداء ممتاز، والتفاصيل الصغيرة تصنع فرقاً كبيراً. تجربة تعامل ممتازة من البداية للنهاية.',
     rating: 5, avatarUrl: 'https://i.pravatar.cc/150?img=18', location: 'الدوحة، قطر',
-    pos: [0, 0, 22], color: '#00aaff'
+    pos: [70, 0, -20], color: '#00aaff'
   }
 ]
 

@@ -223,9 +223,9 @@ export class FuturisticHoverCar {
     this.position.x += Math.sin(this.angle) * this.velocity
     this.position.z += Math.cos(this.angle) * this.velocity
 
-    // World bounds
-    this.position.x = Math.max(-95, Math.min(95, this.position.x))
-    this.position.z = Math.max(-95, Math.min(95, this.position.z))
+    // World bounds (expanded for infinite-feeling map)
+    this.position.x = Math.max(-200, Math.min(200, this.position.x))
+    this.position.z = Math.max(-200, Math.min(200, this.position.z))
 
     // Rotation (yaw)
     this.group.rotation.y = this.angle

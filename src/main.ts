@@ -115,6 +115,7 @@ const npcs = createNPCZones(scene)
 
 // ─── Testimonial Characters ───────────────────────────────────
 const testimonialChars = createTestimonialCharacters(scene)
+window.testimonialChars = testimonialChars
 let activeTestimonial: string | null = null
 
 // ─── Testimonial Panel ────────────────────────────────────────
@@ -557,6 +558,7 @@ declare global {
   interface Window {
     show3D(): void
     closeZone(): void
+    testimonialChars: any[]
   }
 }
 

@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { setLocale, initI18n, t } from './i18n/index.js'
-import { profile, skills } from './data/profile.js'
+import { profile } from './data/profile.js'
+import { HoverCar, HoverCarControls } from './vehicle/car.js'
 
 // ─── Scene setup ────────────────────────────────────────────
 const scene = new THREE.Scene()
@@ -8,24 +9,23 @@ scene.background = new THREE.Color(0x1a1a2e)
 scene.fog = new THREE.FogExp2(0x1a1a2e, 0.008)
 
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000)
-camera.position.set(0, 15, 25)
-camera.lookAt(0, 0, 0)
+camera.position.set(0, 15, -25)
 
-const renderer = new THREE.WebGLRenderer({ antialias: true })
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' })
 renderer.setSize(window.innerWidth, window.innerHeight)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.PCFSoftShadowMap
 renderer.toneMapping = THREE.ACESFilmicToneMapping
-renderer.toneMappingExposure = 1.0
+renderer.toneMappingExposure = 1.1
 document.body.appendChild(renderer.domElement)
 
-// ─── Lighting (golden hour) ────────────────────────────────
-const ambientLight = new THREE.AmbientLight(0xffeedd, 0.4)
+// ─── Lighting (golden hour sunset) ──────────────────────────
+const ambientLight = new THREE.AmbientLight(0xffeedd, 0.5)
 scene.add(ambientLight)
 
-const sunLight = new THREE.DirectionalLight(0xffaa55, 1.5)
-sunLight.position.set(50, 30, -20)
+const sunLight = new THREE.DirectionalLight(0xffaa55, 1.8)
+sunLight.position.set(50, 40, -30)
 sunLight.castShadow = true
 sunLight.shadow.mapSize.width = 2048
 sunLight.shadow.mapSize.height = 2048
@@ -37,158 +37,152 @@ sunLight.shadow.camera.top = 60
 sunLight.shadow.camera.bottom = -60
 scene.add(sunLight)
 
-const fillLight = new THREE.DirectionalLight(0x4488ff, 0.3)
+const fillLight = new THREE.DirectionalLight(0x00f3ff, 0.4)
 fillLight.position.set(-30, 20, 30)
 scene.add(fillLight)
 
 // ─── Ground ─────────────────────────────────────────────────
 const groundGeo = new THREE.PlaneGeometry(200, 200)
 const groundMat = new THREE.MeshStandardMaterial({
-  color: 0x3a5a40,
-  roughness: 0.9,
-  metalness: 0.0
+  color: 0x1e293b,
+  roughness: 0.85,
+  metalness: 0.1
 })
 const ground = new THREE.Mesh(groundGeo, groundMat)
 ground.rotation.x = -Math.PI / 2
 ground.receiveShadow = true
 scene.add(ground)
 
-// ─── Grid helper (subtle) ───────────────────────────────────
-const grid = new THREE.GridHelper(200, 40, 0x2a4a30, 0x2a4a30)
-grid.position.y = 0.01
+// Cyber grid helper
+const grid = new THREE.GridHelper(200, 40, 0x00f3ff, 0x334155)
+grid.position.y = 0.02
 scene.add(grid)
 
-// ─── Hover car ─────────────────────────────────────────────
-const carGroup = new THREE.Group()
+// ─── Hover Car Setup ─────────────────────────────────────────
+const car = new HoverCar()
+scene.add(car.group)
 
-// Body
-const bodyGeo = new THREE.BoxGeometry(4, 0.8, 2)
-const bodyMat = new THREE.MeshStandardMaterial({ color: 0xe94560, roughness: 0.3, metalness: 0.6 })
-const body = new THREE.Mesh(bodyGeo, bodyMat)
-body.position.y = 0.6
-body.castShadow = true
-carGroup.add(body)
-
-// Cabin
-const cabinGeo = new THREE.BoxGeometry(2, 0.6, 1.6)
-const cabinMat = new THREE.MeshStandardMaterial({ color: 0x16213e, roughness: 0.1, metalness: 0.8 })
-const cabin = new THREE.Mesh(cabinGeo, cabinMat)
-cabin.position.set(-0.3, 1.3, 0)
-cabin.castShadow = true
-carGroup.add(cabin)
-
-// Lights
-const headlightGeo = new THREE.SphereGeometry(0.15, 8, 8)
-const headlightMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffcc, emissiveIntensity: 2 })
-const hl1 = new THREE.Mesh(headlightGeo, headlightMat)
-hl1.position.set(2, 0.6, 0.6)
-carGroup.add(hl1)
-const hl2 = hl1.clone()
-hl2.position.set(2, 0.6, -0.6)
-carGroup.add(hl2)
-
-// Engine glow
-const glowGeo = new THREE.BoxGeometry(0.5, 0.2, 1.8)
-const glowMat = new THREE.MeshStandardMaterial({ color: 0x00ffcc, emissive: 0x00ffcc, emissiveIntensity: 1 })
-const glow = new THREE.Mesh(glowGeo, glowMat)
-glow.position.set(-2, 0.5, 0)
-carGroup.add(glow)
-
-carGroup.position.set(0, 0.5, 0)
-scene.add(carGroup)
-
-// ─── Zone markers (3D signs) ────────────────────────────────
+// ─── Zone markers (3D pedestals) ─────────────────────────────
 const zones: { pos: THREE.Vector3; name: string; group: THREE.Group }[] = []
 
 function createZoneMarker(x: number, z: number, color: number, name: string): THREE.Group {
   const group = new THREE.Group()
 
-  // Pedestal
-  const pedGeo = new THREE.CylinderGeometry(1.5, 2, 0.5, 8)
-  const pedMat = new THREE.MeshStandardMaterial({ color: 0x2a2a4a, roughness: 0.5 })
+  // Base Pedestal
+  const pedGeo = new THREE.CylinderGeometry(1.8, 2.3, 0.5, 12)
+  const pedMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.4, metalness: 0.8 })
   const ped = new THREE.Mesh(pedGeo, pedMat)
   ped.position.y = 0.25
   ped.castShadow = true
   ped.receiveShadow = true
   group.add(ped)
 
+  // Glowing Base Ring
+  const ringGeo = new THREE.TorusGeometry(2.0, 0.08, 12, 32)
+  const ringMat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 2.5 })
+  const ring = new THREE.Mesh(ringGeo, ringMat)
+  ring.rotation.x = Math.PI / 2
+  ring.position.y = 0.05
+  group.add(ring)
+
   // Pillar
-  const pillarGeo = new THREE.CylinderGeometry(0.3, 0.3, 4, 8)
-  const pillarMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.3, metalness: 0.5 })
+  const pillarGeo = new THREE.CylinderGeometry(0.2, 0.2, 3.5, 8)
+  const pillarMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.2, metalness: 0.9 })
   const pillar = new THREE.Mesh(pillarGeo, pillarMat)
-  pillar.position.y = 2.5
+  pillar.position.y = 2.0
   pillar.castShadow = true
   group.add(pillar)
 
-  // Sign
-  const signGeo = new THREE.BoxGeometry(3, 1.5, 0.2)
-  const signMat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 0.3 })
+  // Floating Signboard
+  const signGeo = new THREE.BoxGeometry(3.2, 1.6, 0.2)
+  const signMat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 0.8, roughness: 0.2 })
   const sign = new THREE.Mesh(signGeo, signMat)
-  sign.position.y = 5
+  sign.position.y = 4.5
   sign.castShadow = true
   group.add(sign)
 
   group.position.set(x, 0, z)
   scene.add(group)
-  zones.push({ pos: new THREE.Vector3(x, 0, z), name, group: group })
+  zones.push({ pos: new THREE.Vector3(x, 0, z), name, group })
   return group
 }
 
-// About zone (orange)
-const aboutZone = createZoneMarker(-20, -15, 0xf0a50b, 'about')
-// Projects zone (pink/red)
-const projectsZone = createZoneMarker(20, -15, 0xe94560, 'projects')
+// Create Zones
+createZoneMarker(-18, -12, 0xf0a50b, 'about')     // About (Golden Orange)
+createZoneMarker(18, -12, 0xe94560, 'projects')   // Projects (Pink/Crimson Studio)
 
-// ─── Decorative elements ────────────────────────────────────
-// Trees
-function createTree(x: number, z: number) {
-  const trunkGeo = new THREE.CylinderGeometry(0.2, 0.3, 2, 6)
-  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 })
+// ─── Trees & World Props ─────────────────────────────────────
+function createStylizedTree(x: number, z: number) {
+  const trunkGeo = new THREE.CylinderGeometry(0.25, 0.4, 2.2, 6)
+  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.8 })
   const trunk = new THREE.Mesh(trunkGeo, trunkMat)
-  trunk.position.set(x, 1, z)
+  trunk.position.set(x, 1.1, z)
   trunk.castShadow = true
   scene.add(trunk)
 
-  const leavesGeo = new THREE.SphereGeometry(1.5, 6, 6)
-  const leavesMat = new THREE.MeshStandardMaterial({ color: 0x2d5a27, roughness: 0.8 })
-  const leaves = new THREE.Mesh(leavesGeo, leavesMat)
-  leaves.position.set(x, 3, z)
-  leaves.castShadow = true
-  scene.add(leaves)
+  const topGeo = new THREE.ConeGeometry(1.6, 3.2, 5)
+  const topMat = new THREE.MeshStandardMaterial({ color: 0x0d9488, roughness: 0.7, flatShading: true })
+  const top = new THREE.Mesh(topGeo, topMat)
+  top.position.set(x, 3.2, z)
+  top.castShadow = true
+  scene.add(top)
 }
 
-for (let i = 0; i < 30; i++) {
-  const x = (Math.random() - 0.5) * 150
-  const z = (Math.random() - 0.5) * 150
-  if (Math.abs(x) > 8 || Math.abs(z) > 8) createTree(x, z)
+for (let i = 0; i < 35; i++) {
+  const x = (Math.random() - 0.5) * 160
+  const z = (Math.random() - 0.5) * 160
+  if (Math.hypot(x, z) > 12) createStylizedTree(x, z)
 }
 
-// ─── Controls ───────────────────────────────────────────────
+// ─── Controls Input ──────────────────────────────────────────
 const keys: Record<string, boolean> = {}
 window.addEventListener('keydown', e => { keys[e.code] = true })
 window.addEventListener('keyup', e => { keys[e.code] = false })
 
-let carVel = 0
-let carAngle = 0
-const MAX_SPEED = 0.8
-const ACCEL = 0.02
-const BRAKE = 0.04
-const FRICTION = 0.98
-const TURN_SPEED = 0.03
+function getControls(): HoverCarControls {
+  return {
+    forward: keys['KeyW'] || keys['ArrowUp'],
+    backward: keys['KeyS'] || keys['ArrowDown'],
+    left: keys['KeyA'] || keys['ArrowLeft'],
+    right: keys['KeyD'] || keys['ArrowRight'],
+    brake: keys['Space'],
+    boost: keys['ShiftLeft'] || keys['ShiftRight'],
+    reset: keys['KeyR']
+  }
+}
 
-// ─── Camera follow ──────────────────────────────────────────
-const camOffset = new THREE.Vector3(0, 12, 20)
+// ─── Camera Chase Follow ─────────────────────────────────────
 const camTarget = new THREE.Vector3()
+const camPos = new THREE.Vector3()
 
-// ─── Zone detection ─────────────────────────────────────────
+function updateCamera() {
+  const carPos = car.group.position
+  const angle = car.getAngle()
+
+  // Camera stays behind car (Front is +Z, so behind is -Z in local frame rotated by angle)
+  const distance = 16
+  const height = 9
+
+  const idealX = carPos.x - Math.sin(angle) * distance
+  const idealZ = carPos.z - Math.cos(angle) * distance
+  const idealY = carPos.y + height
+
+  camPos.set(idealX, idealY, idealZ)
+  camera.position.lerp(camPos, 0.08)
+
+  camTarget.copy(carPos).add(new THREE.Vector3(0, 1.5, 0))
+  camera.lookAt(camTarget)
+}
+
+// ─── Zone Proximity Detection ────────────────────────────────
 let activeZone: string | null = null
 
 function checkZones() {
-  const carPos = carGroup.position
+  const carPos = car.group.position
   for (const zone of zones) {
     const dist = carPos.distanceTo(zone.pos)
     const panel = document.getElementById(`zone-${zone.name}`)
-    if (dist < 8 && panel) {
+    if (dist < 8.5 && panel) {
       panel.classList.add('active')
       activeZone = zone.name
     } else if (panel) {
@@ -198,7 +192,7 @@ function checkZones() {
   }
 }
 
-// ─── Populate projects zone ─────────────────────────────────
+// ─── Populate Projects Section ───────────────────────────────
 function populateProjects() {
   const container = document.getElementById('projects-content')
   if (!container) return
@@ -211,139 +205,120 @@ function populateProjects() {
     titleEl.className = 'section-title'
     titleEl.textContent = title
     div.appendChild(titleEl)
+
     for (const repo of repos) {
       const card = document.createElement('div')
       card.className = 'repo-card'
       card.innerHTML = `
         <h3>${repo.name}</h3>
-        <p style="font-size:0.85rem;color:#aaa;margin:4px 0">${repo.description}</p>
+        <p style="font-size:0.85rem;color:#cbd5e1;margin:4px 0;line-height:1.4">${repo.description}</p>
         <div class="meta">
           <span class="tag">${repo.language ?? 'Mix'}</span>
           <span class="tag">⭐ ${repo.stars}</span>
         </div>
-        <a href="${repo.htmlUrl}" target="_blank" rel="noopener" style="display:block;margin-top:8px">→ ${repo.htmlUrl}</a>
+        <a href="${repo.htmlUrl}" target="_blank" rel="noopener" style="display:block;margin-top:8px;color:#38bdf8">→ ${repo.htmlUrl}</a>
       `
       div.appendChild(card)
     }
     return div
   }
 
+  container.innerHTML = ''
   container.appendChild(makeSection('Featured', featured))
   if (experiments.length) container.appendChild(makeSection('Experiments', experiments))
 }
 populateProjects()
 
-// ─── Minimap ────────────────────────────────────────────────
+// ─── Minimap ─────────────────────────────────────────────────
 const mmCanvas = document.getElementById('minimap-canvas') as HTMLCanvasElement
-mmCanvas.width = 160
-mmCanvas.height = 160
-const mmCtx = mmCanvas.getContext('2d')!
+if (mmCanvas) {
+  mmCanvas.width = 160
+  mmCanvas.height = 160
+}
+const mmCtx = mmCanvas?.getContext('2d')
 
 function drawMinimap() {
+  if (!mmCtx) return
   mmCtx.clearRect(0, 0, 160, 160)
-  mmCtx.fillStyle = 'rgba(10,10,30,0.8)'
+  mmCtx.fillStyle = 'rgba(15, 23, 42, 0.9)'
   mmCtx.fillRect(0, 0, 160, 160)
 
-  const scale = 0.8
+  const scale = 0.75
   const cx = 80, cy = 80
 
   // Draw zones
   for (const zone of zones) {
-    const dx = (zone.pos.x - carGroup.position.x) * scale + cx
-    const dz = (zone.pos.z - carGroup.position.z) * scale + cy
+    const dx = (zone.pos.x - car.group.position.x) * scale + cx
+    const dz = (zone.pos.z - car.group.position.z) * scale + cy
     mmCtx.fillStyle = zone.name === 'about' ? '#f0a50b' : '#e94560'
     mmCtx.beginPath()
     mmCtx.arc(dx, dz, 5, 0, Math.PI * 2)
     mmCtx.fill()
   }
 
-  // Draw car (center)
-  mmCtx.fillStyle = '#fff'
+  // Draw Cybercab Hover Car
+  mmCtx.save()
+  mmCtx.translate(cx, cy)
+  mmCtx.rotate(-car.getAngle())
+  mmCtx.fillStyle = '#00f3ff'
   mmCtx.beginPath()
-  mmCtx.arc(cx, cy, 3, 0, Math.PI * 2)
+  mmCtx.moveTo(0, -6)
+  mmCtx.lineTo(4, 5)
+  mmCtx.lineTo(-4, 5)
+  mmCtx.closePath()
   mmCtx.fill()
+  mmCtx.restore()
 }
 
-// ─── Animation loop ─────────────────────────────────────────
+// ─── Main Animation Loop ─────────────────────────────────────
 const clock = new THREE.Clock()
 
 function animate() {
   requestAnimationFrame(animate)
   const delta = clock.getDelta()
 
-  // Car physics
-  if (keys['KeyW'] || keys['ArrowUp']) carVel = Math.min(carVel + ACCEL, MAX_SPEED)
-  if (keys['KeyS'] || keys['ArrowDown']) carVel = Math.max(carVel - ACCEL, -MAX_SPEED * 0.5)
-  if (keys['Space']) carVel *= (1 - BRAKE)
-  else carVel *= FRICTION
+  const ctrl = getControls()
+  car.update(delta, ctrl)
 
-  if (Math.abs(carVel) > 0.01) {
-    if (keys['KeyA'] || keys['ArrowLeft']) carAngle += TURN_SPEED * Math.sign(carVel)
-    if (keys['KeyD'] || keys['ArrowRight']) carAngle -= TURN_SPEED * Math.sign(carVel)
-  }
-
-  if (keys['KeyR']) {
-    carGroup.position.set(0, 0.5, 0)
-    carAngle = 0
-    carVel = 0
-  }
-
-  carGroup.position.x += Math.sin(carAngle) * carVel
-  carGroup.position.z += Math.cos(carAngle) * carVel
-  carGroup.rotation.y = carAngle
-
-  // Clamp to world bounds
-  carGroup.position.x = Math.max(-90, Math.min(90, carGroup.position.x))
-  carGroup.position.z = Math.max(-90, Math.min(90, carGroup.position.z))
-
-  // Engine glow based on speed
-  glow.material.emissiveIntensity = 0.5 + Math.abs(carVel) * 2
-
-  // Chase camera
-  const idealOffset = new THREE.Vector3(
-    Math.sin(carAngle) * -15,
-    12,
-    Math.cos(carAngle) * -15
-  )
-  camTarget.copy(carGroup.position).add(idealOffset)
-  camera.position.lerp(camTarget, 0.05)
-  camera.lookAt(carGroup.position)
-
-  // Zone detection
+  updateCamera()
   checkZones()
-
-  // Minimap
   drawMinimap()
+
+  // Animate zone signs floating slightly
+  const time = clock.getElapsedTime()
+  zones.forEach(z => {
+    z.group.position.y = Math.sin(time * 2 + z.pos.x) * 0.15
+  })
 
   renderer.render(scene, camera)
 }
 animate()
 
-// ─── Resize ─────────────────────────────────────────────────
+// ─── Window Resize Handler ───────────────────────────────────
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight
   camera.updateProjectionMatrix()
   renderer.setSize(window.innerWidth, window.innerHeight)
 })
 
-// ─── Loading complete ───────────────────────────────────────
+// ─── Loading Screen Dismiss ──────────────────────────────────
 setTimeout(() => {
   document.getElementById('loading')?.classList.add('hidden')
 }, 800)
 
-// ─── Language toggle ────────────────────────────────────────
+// ─── Language Handlers ───────────────────────────────────────
 document.getElementById('lang-btn-en')?.addEventListener('click', () => setLocale('en'))
 document.getElementById('lang-btn-ar')?.addEventListener('click', () => setLocale('ar'))
 
-// ─── Skip to classic view ───────────────────────────────────
+// ─── Classic View Handlers ───────────────────────────────────
 document.querySelectorAll('#skip-btn, .skip-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.getElementById('classic-view')?.classList.add('active')
-    document.getElementById('hud')!.style.display = 'none'
+    const hud = document.getElementById('hud')
+    if (hud) hud.style.display = 'none'
   })
 })
 
-// Declare global functions for inline HTML event handlers
 declare global {
   interface Window {
     show3D(): void
@@ -352,8 +327,7 @@ declare global {
 }
 
 window.show3D = () => {
-  const cv = document.getElementById('classic-view')
-  if (cv) cv.classList.remove('active')
+  document.getElementById('classic-view')?.classList.remove('active')
   const hud = document.getElementById('hud')
   if (hud) hud.style.display = ''
 }
@@ -363,7 +337,7 @@ window.closeZone = () => {
   activeZone = null
 }
 
-// ─── Init i18n ──────────────────────────────────────────────
+// ─── Initialize i18n ─────────────────────────────────────────
 initI18n()
 
-console.log('Portfolio 3D loaded. Drive with WASD/Arrows.')
+console.log('Portfolio Cybercab Hover Car ready. WASD to drive!')

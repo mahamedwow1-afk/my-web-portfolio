@@ -1,75 +1,96 @@
 import * as THREE from 'three'
 import { setLocale, initI18n } from './i18n/index.js'
 import { profile } from './data/profile.js'
-import { Cybercab } from './world/car.js'
-import { createSynthwaveEnvironment } from './world/environment.js'
+import { Cybercar } from './world/car.js'
 import { createNPCZones } from './world/npcs.js'
+import { SynthwaveWorld } from './world/synthwave-world.js'
 
-// ─── Scene setup ────────────────────────────────────────────
+// ─── Scene Setup ──────────────────────────────────────────────
 const scene = new THREE.Scene()
-scene.background = new THREE.Color(0x1a1a2e)
+scene.background = new THREE.Color(0x09071b)
 
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000)
-camera.position.set(0, 15, -20)
+camera.position.set(0, 18, -25)
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' })
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  powerPreference: 'high-performance'
+})
 renderer.setSize(window.innerWidth, window.innerHeight)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.PCFSoftShadowMap
 renderer.toneMapping = THREE.ACESFilmicToneMapping
-renderer.toneMappingExposure = 1.2
+renderer.toneMappingExposure = 1.3
 document.body.appendChild(renderer.domElement)
 
-// ─── Synthwave Environment ──────────────────────────────────
-createSynthwaveEnvironment(scene)
+// ─── Initialize Synthwave World ──────────────────────────────
+const synthwaveWorld = new SynthwaveWorld(scene, camera, renderer)
+synthwaveWorld.init()
 
-// ─── Cybercab ───────────────────────────────────────────────
-const car = new Cybercab()
+// ─── Create Cybercar ─────────────────────────────────────────
+const car = new Cybercar()
 scene.add(car.group)
 
-// ─── Zone System ────────────────────────────────────────────
+// ─── Zone System ──────────────────────────────────────────────
 const zones: { pos: THREE.Vector3; name: string; group: THREE.Group; color: number }[] = []
 
 function createZoneMarker(x: number, z: number, color: number, name: string): THREE.Group {
   const group = new THREE.Group()
 
   // Base platform
-  const baseGeo = new THREE.CylinderGeometry(2.5, 3, 0.6, 8)
-  const baseMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.8 })
+  const baseGeo = new THREE.CylinderGeometry(2.8, 3.2, 0.7, 8)
+  const baseMat = new THREE.MeshStandardMaterial({
+    color: 0x0f172a,
+    roughness: 0.25,
+    metalness: 0.85
+  })
   const base = new THREE.Mesh(baseGeo, baseMat)
-  base.position.y = 0.3
+  base.position.y = 0.35
   base.castShadow = true
   base.receiveShadow = true
   group.add(base)
 
   // Glowing ring
-  const ringGeo = new THREE.TorusGeometry(2.8, 0.1, 12, 32)
-  const ringMat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 3 })
+  const ringGeo = new THREE.TorusGeometry(3.2, 0.12, 12, 32)
+  const ringMat = new THREE.MeshStandardMaterial({
+    color: color,
+    emissive: color,
+    emissiveIntensity: 4
+  })
   const ring = new THREE.Mesh(ringGeo, ringMat)
   ring.rotation.x = Math.PI / 2
-  ring.position.y = 0.05
+  ring.position.y = 0.06
   group.add(ring)
 
   // Pillar
-  const pillarGeo = new THREE.CylinderGeometry(0.25, 0.25, 4, 8)
-  const pillarMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.2, metalness: 0.9 })
+  const pillarGeo = new THREE.CylinderGeometry(0.28, 0.28, 4.5, 8)
+  const pillarMat = new THREE.MeshStandardMaterial({
+    color: 0x334155,
+    roughness: 0.15,
+    metalness: 0.95
+  })
   const pillar = new THREE.Mesh(pillarGeo, pillarMat)
-  pillar.position.y = 2.5
+  pillar.position.y = 2.6
   pillar.castShadow = true
   group.add(pillar)
 
   // Sign panel
-  const signGeo = new THREE.BoxGeometry(4, 2, 0.3)
-  const signMat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 0.6, roughness: 0.3 })
+  const signGeo = new THREE.BoxGeometry(4.5, 2.2, 0.35)
+  const signMat = new THREE.MeshStandardMaterial({
+    color: color,
+    emissive: color,
+    emissiveIntensity: 0.8,
+    roughness: 0.25
+  })
   const sign = new THREE.Mesh(signGeo, signMat)
-  sign.position.y = 5
+  sign.position.y = 5.2
   sign.castShadow = true
   group.add(sign)
 
   // Point light
-  const pointLight = new THREE.PointLight(color, 2, 15)
-  pointLight.position.y = 5
+  const pointLight = new THREE.PointLight(color, 3, 18)
+  pointLight.position.y = 5.2
   group.add(pointLight)
 
   group.position.set(x, 0, z)
@@ -79,16 +100,16 @@ function createZoneMarker(x: number, z: number, color: number, name: string): TH
 }
 
 // Create zones
-createZoneMarker(-20, -20, 0xf0a50b, 'about')
-createZoneMarker(20, -20, 0xe94560, 'projects')
-createZoneMarker(-20, 20, 0x00f3ff, 'skills')
-createZoneMarker(20, 20, 0x7c3aed, 'experience')
-createZoneMarker(0, -35, 0x10b981, 'contact')
+createZoneMarker(-22, -22, 0xf0a50b, 'about')
+createZoneMarker(22, -22, 0xe94560, 'projects')
+createZoneMarker(-22, 22, 0x00f3ff, 'skills')
+createZoneMarker(22, 22, 0x7c3aed, 'experience')
+createZoneMarker(0, -38, 0x10b981, 'contact')
 
-// ─── NPCs ───────────────────────────────────────────────────
+// ─── NPCs ─────────────────────────────────────────────────────
 const npcs = createNPCZones(scene)
 
-// ─── Controls ───────────────────────────────────────────────
+// ─── Controls ─────────────────────────────────────────────────
 const keys: Record<string, boolean> = {}
 window.addEventListener('keydown', e => { keys[e.code] = true })
 window.addEventListener('keyup', e => { keys[e.code] = false })
@@ -105,30 +126,28 @@ function getControls() {
   }
 }
 
-// ─── Camera Follow ──────────────────────────────────────────
-const camOffset = new THREE.Vector3(0, 12, 18)
+// ─── Camera Follow ────────────────────────────────────────────
+const camOffset = new THREE.Vector3(0, 15, 22)
 const camTarget = new THREE.Vector3()
 
 function updateCamera() {
   const carPos = car.position
   const angle = car.angle
 
-  // Camera should follow behind the car
-  // Car faces +Z when angle=0, so behind is -Z
   const idealOffset = new THREE.Vector3(
-    -Math.sin(angle) * 18,
-    12,
-    -Math.cos(angle) * 18
+    -Math.sin(angle) * 22,
+    15,
+    -Math.cos(angle) * 22
   )
 
   const idealPos = carPos.clone().add(idealOffset)
-  camera.position.lerp(idealPos, 0.05)
+  camera.position.lerp(idealPos, 0.06)
 
-  camTarget.copy(carPos).add(new THREE.Vector3(0, 1, 0))
+  camTarget.copy(carPos).add(new THREE.Vector3(0, 1.5, 0))
   camera.lookAt(camTarget)
 }
 
-// ─── Zone Detection ─────────────────────────────────────────
+// ─── Zone Detection ───────────────────────────────────────────
 let activeZone: string | null = null
 
 function checkZones() {
@@ -136,7 +155,7 @@ function checkZones() {
   for (const zone of zones) {
     const dist = carPos.distanceTo(zone.pos)
     const panel = document.getElementById(`zone-${zone.name}`)
-    if (dist < 10 && panel) {
+    if (dist < 12 && panel) {
       panel.classList.add('active')
       activeZone = zone.name
     } else if (panel) {
@@ -146,7 +165,7 @@ function checkZones() {
   }
 }
 
-// ─── Populate Panels ────────────────────────────────────────
+// ─── Populate Panels ──────────────────────────────────────────
 function populateAboutPanel() {
   const container = document.getElementById('about-content')
   if (!container) return
@@ -351,7 +370,7 @@ populateEducationPanel()
 populateContactPanel()
 populateClassicView()
 
-// ─── Minimap ────────────────────────────────────────────────
+// ─── Minimap ──────────────────────────────────────────────────
 const mmCanvas = document.getElementById('minimap-canvas') as HTMLCanvasElement
 if (mmCanvas) {
   mmCanvas.width = 160
@@ -362,10 +381,10 @@ const mmCtx = mmCanvas?.getContext('2d')
 function drawMinimap() {
   if (!mmCtx) return
   mmCtx.clearRect(0, 0, 160, 160)
-  mmCtx.fillStyle = 'rgba(15, 23, 42, 0.95)'
+  mmCtx.fillStyle = 'rgba(9, 7, 27, 0.95)'
   mmCtx.fillRect(0, 0, 160, 160)
 
-  const scale = 0.6
+  const scale = 0.55
   const cx = 80, cy = 80
 
   zones.forEach(zone => {
@@ -373,7 +392,7 @@ function drawMinimap() {
     const dz = (zone.pos.z - car.position.z) * scale + cy
     mmCtx.fillStyle = '#' + zone.color.toString(16).padStart(6, '0')
     mmCtx.beginPath()
-    mmCtx.arc(dx, dz, 6, 0, Math.PI * 2)
+    mmCtx.arc(dx, dz, 7, 0, Math.PI * 2)
     mmCtx.fill()
   })
 
@@ -383,16 +402,16 @@ function drawMinimap() {
   mmCtx.rotate(-car.angle)
   mmCtx.fillStyle = '#00d4ff'
   mmCtx.beginPath()
-  mmCtx.moveTo(0, -7)
-  mmCtx.lineTo(5, 5)
-  mmCtx.lineTo(-5, 5)
+  mmCtx.moveTo(0, -8)
+  mmCtx.lineTo(6, 6)
+  mmCtx.lineTo(-6, 6)
   mmCtx.closePath()
   mmCtx.fill()
   mmCtx.restore()
 }
 
-// ─── NPC Proximity Detection ───────────────────────────────
-const NPC_NEAR = 8
+// ─── NPC Proximity Detection ──────────────────────────────────
+const NPC_NEAR = 10
 
 function updateNPCs() {
   const carPos = car.position
@@ -407,7 +426,7 @@ function updateNPCs() {
   })
 }
 
-// ─── Animation Loop ─────────────────────────────────────────
+// ─── Animation Loop ───────────────────────────────────────────
 const clock = new THREE.Clock()
 
 function animate() {
@@ -424,42 +443,33 @@ function animate() {
 
   // Animate zones floating
   zones.forEach((z, i) => {
-    z.group.position.y = Math.sin(time * 1.5 + i) * 0.2
+    z.group.position.y = Math.sin(time * 1.5 + i) * 0.25
   })
 
-  // Animate particles
-  const positions = (scene.children.find(c => c.type === 'Points') as any)?.geometry?.attributes?.position
-  if (positions) {
-    for (let i = 0; i < positions.count; i++) {
-      let y = positions.getY(i)
-      y += delta * 0.3
-      if (y > 22) y = 2
-      positions.setY(i, y)
-    }
-    positions.needsUpdate = true
-  }
+  // Update synthwave world
+  synthwaveWorld.update(time)
 
   renderer.render(scene, camera)
 }
 animate()
 
-// ─── Resize Handler ─────────────────────────────────────────
+// ─── Resize Handler ───────────────────────────────────────────
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight
   camera.updateProjectionMatrix()
   renderer.setSize(window.innerWidth, window.innerHeight)
 })
 
-// ─── Loading Screen ─────────────────────────────────────────
+// ─── Loading Screen ───────────────────────────────────────────
 setTimeout(() => {
   document.getElementById('loading')?.classList.add('hidden')
-}, 1000)
+}, 800)
 
-// ─── Language Toggle ────────────────────────────────────────
+// ─── Language Toggle ──────────────────────────────────────────
 document.getElementById('lang-btn-en')?.addEventListener('click', () => setLocale('en'))
 document.getElementById('lang-btn-ar')?.addEventListener('click', () => setLocale('ar'))
 
-// ─── Classic View ───────────────────────────────────────────
+// ─── Classic View ─────────────────────────────────────────────
 document.querySelectorAll('#skip-btn, .skip-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.getElementById('classic-view')?.classList.add('active')
@@ -486,7 +496,7 @@ window.closeZone = () => {
   activeZone = null
 }
 
-// ─── Init ───────────────────────────────────────────────────
+// ─── Init ─────────────────────────────────────────────────────
 initI18n()
 
-console.log('Portfolio ready! Drive with WASD/Arrows')
+console.log('🚀 Synthwave Portfolio Ready! Drive with WASD/Arrows')

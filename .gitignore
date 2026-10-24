@@ -1,0 +1,17 @@
+mahamedwow1-afk
+*.pyc
+__pycache__/
+*.pyo
+node_modules/
+dist/
+.env
+.env.local
+.DS_Store
+*.log
+.vscode/
+.idea/
+*.local.json
+coverage/
+.pytest_cache/
+.mypy_cache/
+*.tsbuildinfo

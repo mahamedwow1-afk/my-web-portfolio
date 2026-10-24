@@ -1,15 +1,15 @@
 import * as THREE from 'three'
-import { setLocale, initI18n, t } from './i18n/index.js'
+import { setLocale, initI18n } from './i18n/index.js'
 import { profile } from './data/profile.js'
 import { HoverCar, HoverCarControls } from './vehicle/car.js'
 
 // ─── Scene setup ────────────────────────────────────────────
 const scene = new THREE.Scene()
 scene.background = new THREE.Color(0x0f172a)
-scene.fog = new THREE.FogExp2(0x0f172a, 0.006)
+scene.fog = new THREE.FogExp2(0x0f172a, 0.007)
 
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000)
-camera.position.set(0, 15, -25)
+camera.position.set(0, 15, -20)
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' })
 renderer.setSize(window.innerWidth, window.innerHeight)
@@ -20,12 +20,12 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping
 renderer.toneMappingExposure = 1.2
 document.body.appendChild(renderer.domElement)
 
-// ─── Lighting ───────────────────────────────────────────────
+// ─── Lighting (golden hour) ─────────────────────────────────
 const ambientLight = new THREE.AmbientLight(0x404060, 0.6)
 scene.add(ambientLight)
 
 const sunLight = new THREE.DirectionalLight(0xffaa55, 2.0)
-sunLight.position.set(50, 50, -30)
+sunLight.position.set(50, 40, -30)
 sunLight.castShadow = true
 sunLight.shadow.mapSize.width = 2048
 sunLight.shadow.mapSize.height = 2048
@@ -37,17 +37,16 @@ sunLight.shadow.camera.top = 80
 sunLight.shadow.camera.bottom = -80
 scene.add(sunLight)
 
-const fillLight = new THREE.DirectionalLight(0x4488ff, 0.5)
-fillLight.position.set(-40, 30, 40)
+const fillLight = new THREE.DirectionalLight(0x4488ff, 0.4)
+fillLight.position.set(-30, 20, 40)
 scene.add(fillLight)
 
 // ─── Ground ─────────────────────────────────────────────────
-const groundGeo = new THREE.PlaneGeometry(250, 250, 50, 50)
+const groundGeo = new THREE.PlaneGeometry(250, 250)
 const groundMat = new THREE.MeshStandardMaterial({
   color: 0x1e293b,
   roughness: 0.8,
-  metalness: 0.2,
-  wireframe: false
+  metalness: 0.2
 })
 const ground = new THREE.Mesh(groundGeo, groundMat)
 ground.rotation.x = -Math.PI / 2
@@ -102,7 +101,7 @@ function createZoneMarker(x: number, z: number, color: number, name: string): TH
   sign.castShadow = true
   group.add(sign)
 
-  // Point light for glow
+  // Point light
   const pointLight = new THREE.PointLight(color, 2, 15)
   pointLight.position.y = 5
   group.add(pointLight)
@@ -113,14 +112,14 @@ function createZoneMarker(x: number, z: number, color: number, name: string): TH
   return group
 }
 
-// Create zones around the map
-createZoneMarker(-20, -20, 0xf0a50b, 'about')           // About - Golden
-createZoneMarker(20, -20, 0xe94560, 'projects')         // Projects - Red/Pink
-createZoneMarker(-20, 20, 0x00f3ff, 'skills')           // Skills - Cyan
-createZoneMarker(20, 20, 0x7c3aed, 'experience')        // Experience - Purple
-createZoneMarker(0, -35, 0x10b981, 'contact')           // Contact - Green
+// Create zones
+createZoneMarker(-20, -20, 0xf0a50b, 'about')
+createZoneMarker(20, -20, 0xe94560, 'projects')
+createZoneMarker(-20, 20, 0x00f3ff, 'skills')
+createZoneMarker(20, 20, 0x7c3aed, 'experience')
+createZoneMarker(0, -35, 0x10b981, 'contact')
 
-// ─── Decorative Elements ────────────────────────────────────
+// ─── Decorative Trees ───────────────────────────────────────
 function createTree(x: number, z: number) {
   const trunkGeo = new THREE.CylinderGeometry(0.3, 0.5, 3, 6)
   const trunkMat = new THREE.MeshStandardMaterial({ color: 0x475569 })
@@ -162,24 +161,26 @@ function getControls(): HoverCarControls {
   }
 }
 
-// ─── Camera ─────────────────────────────────────────────────
+// ─── Camera Follow ──────────────────────────────────────────
+const camOffset = new THREE.Vector3(0, 12, 18)
 const camTarget = new THREE.Vector3()
-const camPos = new THREE.Vector3()
 
 function updateCamera() {
-  const carPos = car.group.position
-  const angle = car.getAngle()
-  const distance = 18
-  const height = 10
+  const carPos = car.position
+  const angle = car.angle
 
-  const idealX = carPos.x - Math.sin(angle) * distance
-  const idealZ = carPos.z - Math.cos(angle) * distance
-  const idealY = carPos.y + height
+  // Camera should follow behind the car
+  // Car faces +Z when angle=0, so behind is -Z
+  const idealOffset = new THREE.Vector3(
+    -Math.sin(angle) * 18,
+    12,
+    -Math.cos(angle) * 18
+  )
 
-  camPos.set(idealX, idealY, idealZ)
-  camera.position.lerp(camPos, 0.06)
+  const idealPos = carPos.clone().add(idealOffset)
+  camera.position.lerp(idealPos, 0.05)
 
-  camTarget.copy(carPos).add(new THREE.Vector3(0, 2, 0))
+  camTarget.copy(carPos).add(new THREE.Vector3(0, 1, 0))
   camera.lookAt(camTarget)
 }
 
@@ -187,7 +188,7 @@ function updateCamera() {
 let activeZone: string | null = null
 
 function checkZones() {
-  const carPos = car.group.position
+  const carPos = car.position
   for (const zone of zones) {
     const dist = carPos.distanceTo(zone.pos)
     const panel = document.getElementById(`zone-${zone.name}`)
@@ -208,7 +209,7 @@ function populateAboutPanel() {
 
   container.innerHTML = `
     <img class="avatar" src="${profile.avatarUrl}" alt="${profile.name}"
-         onerror="this.onerror=null;this.src='data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><rect width=\'100\' height=\'100\' fill=\'%23f0a50b\'/><text x=\'50%\' y=\'55%\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-size=\'50\' fill=\'%231a1a2e\' font-weight=\'bold\'>MY</text></svg>';">
+         onerror="this.onerror=null;this.src='data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><rect width=%27100%27 height=%27100%27 fill=%27%23f0a50b%27/><text x=%2750%25%27 y=%2755%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-size=%2750%27 fill=%27%231a1a2e%27 font-weight=%27bold%27>MY</text></svg>';">
     <h2>${profile.name}</h2>
     <p class="subtitle">${profile.title}</p>
     <p class="bio">${profile.bio}</p>
@@ -233,7 +234,7 @@ function populateProjectsPanel() {
         <span class="project-category">${project.category}</span>
         <span class="project-title">${project.title}</span>
       </div>
-      <p class="project-desc">${project.description}</p>
+      <p class="project-desc">${project.longDescription || project.description}</p>
       <div class="tech-stack">
         ${project.techStack.map(t => `<span class="tag">${t}</span>`).join('')}
       </div>
@@ -346,7 +347,6 @@ function populateContactPanel() {
   `
 }
 
-// ─── Classic View Population ────────────────────────────────
 function populateClassicView() {
   const projectsContainer = document.getElementById('classic-projects')
   if (projectsContainer) {
@@ -393,14 +393,10 @@ function populateClassicView() {
         </div>
         <div class="org">${exp.organization}</div>
         <p class="desc">${exp.description}</p>
-        <div class="technologies">
-          ${exp.technologies.map(t => `<span class="tag">${t}</span>`).join('')}
-        </div>
       </div>
     `).join('')
   }
 }
-populateClassicView()
 
 // Initialize all panels
 populateAboutPanel()
@@ -409,6 +405,7 @@ populateSkillsPanel()
 populateExperiencePanel()
 populateEducationPanel()
 populateContactPanel()
+populateClassicView()
 
 // ─── Minimap ────────────────────────────────────────────────
 const mmCanvas = document.getElementById('minimap-canvas') as HTMLCanvasElement
@@ -428,19 +425,19 @@ function drawMinimap() {
   const cx = 80, cy = 80
 
   zones.forEach(zone => {
-    const dx = (zone.pos.x - car.group.position.x) * scale + cx
-    const dz = (zone.pos.z - car.group.position.z) * scale + cy
+    const dx = (zone.pos.x - car.position.x) * scale + cx
+    const dz = (zone.pos.z - car.position.z) * scale + cy
     mmCtx.fillStyle = '#' + zone.color.toString(16).padStart(6, '0')
     mmCtx.beginPath()
     mmCtx.arc(dx, dz, 6, 0, Math.PI * 2)
     mmCtx.fill()
   })
 
-  // Car
+  // Draw car as triangle
   mmCtx.save()
   mmCtx.translate(cx, cy)
-  mmCtx.rotate(-car.getAngle())
-  mmCtx.fillStyle = '#00f3ff'
+  mmCtx.rotate(-car.angle)
+  mmCtx.fillStyle = '#00d4ff'
   mmCtx.beginPath()
   mmCtx.moveTo(0, -7)
   mmCtx.lineTo(5, 5)
@@ -463,11 +460,10 @@ function animate() {
   checkZones()
   drawMinimap()
 
-  // Animate zones
+  // Animate zones floating
   const time = clock.getElapsedTime()
   zones.forEach((z, i) => {
     z.group.position.y = Math.sin(time * 1.5 + i) * 0.2
-    z.group.children[2].rotation.y = time * 0.5 // Rotate pillar sign
   })
 
   renderer.render(scene, camera)
@@ -520,4 +516,4 @@ window.closeZone = () => {
 // ─── Init ───────────────────────────────────────────────────
 initI18n()
 
-console.log('Portfolio 3D loaded - Drive with WASD!')
+console.log('Portfolio ready! Drive with WASD/Arrows')

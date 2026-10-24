@@ -2,11 +2,12 @@ import * as THREE from 'three'
 import { setLocale, initI18n } from './i18n/index.js'
 import { profile } from './data/profile.js'
 import { HoverCar, HoverCarControls } from './vehicle/car.js'
+import { createEnvironment } from './world/environment.js'
+import { createNPZones } from './world/npcs.js'
 
 // ─── Scene setup ────────────────────────────────────────────
 const scene = new THREE.Scene()
-scene.background = new THREE.Color(0x0f172a)
-scene.fog = new THREE.FogExp2(0x0f172a, 0.007)
+scene.background = new THREE.Color(0x1a1a2e)
 
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000)
 camera.position.set(0, 15, -20)
@@ -20,43 +21,8 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping
 renderer.toneMappingExposure = 1.2
 document.body.appendChild(renderer.domElement)
 
-// ─── Lighting (golden hour) ─────────────────────────────────
-const ambientLight = new THREE.AmbientLight(0x404060, 0.6)
-scene.add(ambientLight)
-
-const sunLight = new THREE.DirectionalLight(0xffaa55, 2.0)
-sunLight.position.set(50, 40, -30)
-sunLight.castShadow = true
-sunLight.shadow.mapSize.width = 2048
-sunLight.shadow.mapSize.height = 2048
-sunLight.shadow.camera.near = 0.5
-sunLight.shadow.camera.far = 200
-sunLight.shadow.camera.left = -80
-sunLight.shadow.camera.right = 80
-sunLight.shadow.camera.top = 80
-sunLight.shadow.camera.bottom = -80
-scene.add(sunLight)
-
-const fillLight = new THREE.DirectionalLight(0x4488ff, 0.4)
-fillLight.position.set(-30, 20, 40)
-scene.add(fillLight)
-
-// ─── Ground ─────────────────────────────────────────────────
-const groundGeo = new THREE.PlaneGeometry(250, 250)
-const groundMat = new THREE.MeshStandardMaterial({
-  color: 0x1e293b,
-  roughness: 0.8,
-  metalness: 0.2
-})
-const ground = new THREE.Mesh(groundGeo, groundMat)
-ground.rotation.x = -Math.PI / 2
-ground.receiveShadow = true
-scene.add(ground)
-
-// Grid
-const grid = new THREE.GridHelper(250, 50, 0x334155, 0x1e293b)
-grid.position.y = 0.02
-scene.add(grid)
+// ─── Environment ────────────────────────────────────────────
+createEnvironment(scene)
 
 // ─── Hover Car ──────────────────────────────────────────────
 const car = new HoverCar()
@@ -119,30 +85,8 @@ createZoneMarker(-20, 20, 0x00f3ff, 'skills')
 createZoneMarker(20, 20, 0x7c3aed, 'experience')
 createZoneMarker(0, -35, 0x10b981, 'contact')
 
-// ─── Decorative Trees ───────────────────────────────────────
-function createTree(x: number, z: number) {
-  const trunkGeo = new THREE.CylinderGeometry(0.3, 0.5, 3, 6)
-  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x475569 })
-  const trunk = new THREE.Mesh(trunkGeo, trunkMat)
-  trunk.position.set(x, 1.5, z)
-  trunk.castShadow = true
-  scene.add(trunk)
-
-  const topGeo = new THREE.ConeGeometry(2, 4, 6)
-  const topMat = new THREE.MeshStandardMaterial({ color: 0x0d9488, roughness: 0.7, flatShading: true })
-  const top = new THREE.Mesh(topGeo, topMat)
-  top.position.set(x, 5, z)
-  top.castShadow = true
-  scene.add(top)
-}
-
-for (let i = 0; i < 50; i++) {
-  const x = (Math.random() - 0.5) * 200
-  const z = (Math.random() - 0.5) * 200
-  if (Math.hypot(x, z) > 15 && !(Math.abs(x - 20) < 5 && Math.abs(z - 20) < 5)) {
-    createTree(x, z)
-  }
-}
+// ─── NPCs ───────────────────────────────────────────────────
+const npcs = createNPZones(scene)
 
 // ─── Controls ───────────────────────────────────────────────
 const keys: Record<string, boolean> = {}
@@ -447,24 +391,53 @@ function drawMinimap() {
   mmCtx.restore()
 }
 
+// ─── NPC Proximity Detection ───────────────────────────────
+const NPC_NEAR = 8
+
+function updateNPCs() {
+  const carPos = car.position
+  npcs.forEach(npc => {
+    const dist = npc.getDistanceTo(carPos)
+    if (dist < NPC_NEAR) {
+      npc.activate()
+    } else {
+      npc.deactivate()
+    }
+    npc.update(0.016)
+  })
+}
+
 // ─── Animation Loop ─────────────────────────────────────────
 const clock = new THREE.Clock()
 
 function animate() {
   requestAnimationFrame(animate)
   const delta = clock.getDelta()
+  const time = clock.getElapsedTime()
 
   const ctrl = getControls()
   car.update(delta, ctrl)
   updateCamera()
   checkZones()
   drawMinimap()
+  updateNPCs()
 
   // Animate zones floating
-  const time = clock.getElapsedTime()
   zones.forEach((z, i) => {
     z.group.position.y = Math.sin(time * 1.5 + i) * 0.2
   })
+
+  // Animate particles
+  const positions = (scene.children.find(c => c.type === 'Points') as any)?.geometry?.attributes?.position
+  if (positions) {
+    for (let i = 0; i < positions.count; i++) {
+      let y = positions.getY(i)
+      y += delta * 0.3
+      if (y > 22) y = 2
+      positions.setY(i, y)
+    }
+    positions.needsUpdate = true
+  }
 
   renderer.render(scene, camera)
 }

@@ -2,8 +2,8 @@ import * as THREE from 'three'
 import { setLocale, initI18n } from './i18n/index.js'
 import { profile } from './data/profile.js'
 import { HoverCar, HoverCarControls } from './vehicle/car.js'
-import { createEnvironment } from './world/environment.js'
-import { createNPZones } from './world/npcs.js'
+import { createSynthwaveEnvironment } from './world/environment.js'
+import { createNPCZones } from './world/npcs.js'
 
 // ─── Scene setup ────────────────────────────────────────────
 const scene = new THREE.Scene()
@@ -21,8 +21,8 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping
 renderer.toneMappingExposure = 1.2
 document.body.appendChild(renderer.domElement)
 
-// ─── Environment ────────────────────────────────────────────
-createEnvironment(scene)
+// ─── Synthwave Environment ──────────────────────────────────
+createSynthwaveEnvironment(scene)
 
 // ─── Hover Car ──────────────────────────────────────────────
 const car = new HoverCar()
@@ -86,7 +86,7 @@ createZoneMarker(20, 20, 0x7c3aed, 'experience')
 createZoneMarker(0, -35, 0x10b981, 'contact')
 
 // ─── NPCs ───────────────────────────────────────────────────
-const npcs = createNPZones(scene)
+const npcs = createNPCZones(scene)
 
 // ─── Controls ───────────────────────────────────────────────
 const keys: Record<string, boolean> = {}
@@ -403,7 +403,7 @@ function updateNPCs() {
     } else {
       npc.deactivate()
     }
-    npc.update(0.016)
+    npc.update(0.016, carPos)
   })
 }
 

@@ -4,196 +4,195 @@ export interface Testimonial {
   name: string
   role: string
   text: string
-  avatar: string
+  rating?: number
 }
 
-export function createEnvironment(scene: THREE.Scene) {
-  // ─── Better Lighting ────────────────────────────────────────
-  // Warm ambient
-  const ambient = new THREE.AmbientLight(0xffeedd, 0.4)
+export function createSynthwaveEnvironment(scene: THREE.Scene) {
+  // ─── Neon Background ────────────────────────────────────────
+  scene.background = new THREE.Color(0x0a0014)
+  scene.fog = new THREE.FogExp2(0x0a0014, 0.008)
+
+  // ─── Lighting Setup ─────────────────────────────────────────
+  const ambient = new THREE.AmbientLight(0x2d1b69, 0.8)
   scene.add(ambient)
 
-  // Golden hour sun
-  const sun = new THREE.DirectionalLight(0xffaa55, 2.2)
-  sun.position.set(60, 50, -40)
-  sun.castShadow = true
-  sun.shadow.mapSize.set(2048, 2048)
-  sun.shadow.camera.near = 1
-  sun.shadow.camera.far = 250
-  sun.shadow.camera.left = -100
-  sun.shadow.camera.right = 100
-  sun.shadow.camera.top = 100
-  sun.shadow.camera.bottom = -100
-  sun.shadow.bias = -0.001
-  scene.add(sun)
+  // Purple/pink neon lights
+  const light1 = new THREE.PointLight(0xff00ff, 2, 100)
+  light1.position.set(-50, 30, -50)
+  scene.add(light1)
 
-  // Cool fill from opposite side
-  const fill = new THREE.DirectionalLight(0x4488cc, 0.5)
-  fill.position.set(-40, 30, 50)
-  scene.add(fill)
+  const light2 = new THREE.PointLight(0x00ffff, 2, 100)
+  light2.position.set(50, 30, 50)
+  scene.add(light2)
 
-  // Hemisphere for sky/ground color blending
-  const hemi = new THREE.HemisphereLight(0xffd4a0, 0x1e293b, 0.5)
-  scene.add(hemi)
+  const light3 = new THREE.PointLight(0xff0080, 1.5, 80)
+  light3.position.set(0, 40, 0)
+  scene.add(light3)
 
-  // ─── Sun visual (glowing orb) ──────────────────────────────
-  const sunGeo = new THREE.SphereGeometry(4, 16, 16)
-  const sunMat = new THREE.MeshBasicMaterial({ color: 0xffaa33 })
-  const sunMesh = new THREE.Mesh(sunGeo, sunMat)
-  sunMesh.position.copy(sun.position).multiplyScalar(2)
-  scene.add(sunMesh)
+  // ─── Neon Grid Floor ────────────────────────────────────────
+  const gridSize = 300
+  const gridDivisions = 60
+  const gridMat = new THREE.LineBasicMaterial({ color: 0x00ffff, linewidth: 2 })
+  const grid = new THREE.GridHelper(gridSize, gridDivisions, 0xff00ff, 0x00ffff)
+  grid.position.y = 0
+  scene.add(grid)
 
-  // Sun glow halo
-  const glowGeo = new THREE.SphereGeometry(7, 16, 16)
-  const glowMat = new THREE.MeshBasicMaterial({
-    color: 0xffaa55,
-    transparent: true,
-    opacity: 0.15
-  })
-  const glow = new THREE.Mesh(glowGeo, glowMat)
-  glow.position.copy(sunMesh.position)
-  scene.add(glow)
+  // Second grid layer (deeper)
+  const grid2 = new THREE.GridHelper(gridSize, gridDivisions, 0xff00ff, 0x00ffff)
+  grid2.position.y = -0.1
+  grid2.material = new THREE.LineBasicMaterial({ color: 0x8800ff, linewidth: 1, transparent: true, opacity: 0.3 })
+  scene.add(grid2)
 
-  // ─── Ground with gradient-like material ────────────────────
-  const groundGeo = new THREE.PlaneGeometry(300, 300, 60, 60)
-  // Slight vertex displacement for terrain feel
-  const pos = groundGeo.attributes.position
-  for (let i = 0; i < pos.count; i++) {
-    const x = pos.getX(i)
-    const z = pos.getY(i)
-    const dist = Math.sqrt(x * x + z * z)
-    // Flatten center area, gentle hills at edges
-    if (dist > 40) {
-      pos.setZ(i, (Math.sin(x * 0.05) * Math.cos(z * 0.05)) * 1.5)
-    }
-  }
-  groundGeo.computeVertexNormals()
-
+  // ─── Glowing Ground Plane ───────────────────────────────────
+  const groundGeo = new THREE.PlaneGeometry(gridSize, gridSize)
   const groundMat = new THREE.MeshStandardMaterial({
-    color: 0x1e293b,
-    roughness: 0.85,
-    metalness: 0.1
+    color: 0x0a0014,
+    roughness: 0.1,
+    metalness: 0.8,
+    transparent: true,
+    opacity: 0.9
   })
   const ground = new THREE.Mesh(groundGeo, groundMat)
   ground.rotation.x = -Math.PI / 2
+  ground.position.y = -0.05
   ground.receiveShadow = true
   scene.add(ground)
 
-  // Grid lines (subtle)
-  const grid = new THREE.GridHelper(300, 60, 0x334155, 0x1e293b)
-  grid.position.y = 0.03
-  scene.add(grid)
-
-  // ─── Fog ───────────────────────────────────────────────────
-  scene.fog = new THREE.FogExp2(0x1a1a2e, 0.005)
-  scene.background = new THREE.Color(0x1a1a2e)
-
-  // ─── Decorative Trees ──────────────────────────────────────
-  function createTree(x: number, z: number, scale: number = 1) {
+  // ─── Neon Trees ─────────────────────────────────────────────
+  function createNeonTree(x: number, z: number) {
     const group = new THREE.Group()
 
-    const trunkGeo = new THREE.CylinderGeometry(0.2 * scale, 0.4 * scale, 3 * scale, 6)
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.9 })
+    // Trunk (glowing)
+    const trunkGeo = new THREE.CylinderGeometry(0.15, 0.25, 3, 6)
+    const trunkMat = new THREE.MeshStandardMaterial({
+      color: 0xff00ff,
+      emissive: 0xff00ff,
+      emissiveIntensity: 0.5
+    })
     const trunk = new THREE.Mesh(trunkGeo, trunkMat)
-    trunk.position.y = 1.5 * scale
-    trunk.castShadow = true
+    trunk.position.y = 1.5
     group.add(trunk)
 
-    const topGeo = new THREE.ConeGeometry(1.8 * scale, 3.5 * scale, 6)
-    const topMat = new THREE.MeshStandardMaterial({
-      color: 0x0d9488,
-      roughness: 0.7,
+    // Canopy (neon green cone)
+    const canopyGeo = new THREE.ConeGeometry(1.5, 3, 6)
+    const canopyMat = new THREE.MeshStandardMaterial({
+      color: 0x00ff88,
+      emissive: 0x00ff88,
+      emissiveIntensity: 0.6,
       flatShading: true
     })
-    const top = new THREE.Mesh(topGeo, topMat)
-    top.position.y = 4.5 * scale
-    top.castShadow = true
-    group.add(top)
+    const canopy = new THREE.Mesh(canopyGeo, canopyMat)
+    canopy.position.y = 4.5
+    group.add(canopy)
+
+    // Glow ring at base
+    const ringGeo = new THREE.TorusGeometry(1.8, 0.05, 8, 16)
+    const ringMat = new THREE.MeshStandardMaterial({
+      color: 0x00ffff,
+      emissive: 0x00ffff,
+      emissiveIntensity: 2
+    })
+    const ring = new THREE.Mesh(ringGeo, ringMat)
+    ring.rotation.x = Math.PI / 2
+    ring.position.y = 0.05
+    group.add(ring)
 
     group.position.set(x, 0, z)
     scene.add(group)
     return group
   }
 
-  // Place trees scattered
-  for (let i = 0; i < 60; i++) {
-    const angle = Math.random() * Math.PI * 2
-    const dist = 25 + Math.random() * 100
-    const x = Math.cos(angle) * dist
-    const z = Math.sin(angle) * dist
-    const scale = 0.7 + Math.random() * 0.6
-    createTree(x, z, scale)
+  // Scatter neon trees randomly
+  for (let i = 0; i < 80; i++) {
+    const x = (Math.random() - 0.5) * 250
+    const z = (Math.random() - 0.5) * 250
+    // Keep center area clear
+    if (Math.hypot(x, z) > 20) {
+      createNeonTree(x, z)
+    }
   }
 
-  // ─── Rocks ──────────────────────────────────────────────────
-  function createRock(x: number, z: number) {
-    const geo = new THREE.DodecahedronGeometry(0.5 + Math.random() * 0.8, 1)
-    const mat = new THREE.MeshStandardMaterial({
-      color: 0x475569,
-      roughness: 0.9,
-      flatShading: true
-    })
-    const rock = new THREE.Mesh(geo, mat)
-    rock.position.set(x, 0.3, z)
-    rock.rotation.set(Math.random(), Math.random(), Math.random())
-    rock.castShadow = true
-    rock.receiveShadow = true
-    scene.add(rock)
-  }
-
-  for (let i = 0; i < 30; i++) {
-    const x = (Math.random() - 0.5) * 180
-    const z = (Math.random() - 0.5) * 180
-    if (Math.hypot(x, z) > 15) createRock(x, z)
-  }
-
-  // ─── Path/road between zones ────────────────────────────────
-  const pathMat = new THREE.MeshStandardMaterial({
-    color: 0x334155,
-    roughness: 0.9,
-    metalness: 0.05
-  })
-
-  // Main paths connecting zones
-  const paths = [
-    // Horizontal path
-    { x: 0, z: 0, w: 50, d: 3 },
-    // Vertical path
-    { x: 0, z: 0, w: 3, d: 50 },
-    // Diagonal paths
-    { x: -20, z: -20, w: 20, d: 3, rot: Math.PI / 4 },
-    { x: 20, z: -20, w: 20, d: 3, rot: -Math.PI / 4 },
-  ]
-
-  paths.forEach(p => {
-    const geo = new THREE.PlaneGeometry(p.w, p.d)
-    const mesh = new THREE.Mesh(geo, pathMat)
-    mesh.rotation.x = -Math.PI / 2
-    if (p.rot) mesh.rotation.z = p.rot
-    mesh.position.set(p.x, 0.05, p.z)
-    mesh.receiveShadow = true
-    scene.add(mesh)
-  })
-
-  // ─── Floating particles (dust/pollen in golden light) ──────
-  const particleCount = 200
+  // ─── Floating Particles ─────────────────────────────────────
+  const particleCount = 300
   const particleGeo = new THREE.BufferGeometry()
   const positions = new Float32Array(particleCount * 3)
+  const colors = new Float32Array(particleCount * 3)
+
   for (let i = 0; i < particleCount; i++) {
-    positions[i * 3] = (Math.random() - 0.5) * 200
-    positions[i * 3 + 1] = Math.random() * 20 + 2
-    positions[i * 3 + 2] = (Math.random() - 0.5) * 200
+    positions[i * 3] = (Math.random() - 0.5) * 300
+    positions[i * 3 + 1] = Math.random() * 30 + 1
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 300
+
+    // Random neon colors
+    const colorChoice = Math.random()
+    if (colorChoice < 0.33) {
+      colors[i * 3] = 1; colors[i * 3 + 1] = 0; colors[i * 3 + 2] = 1 // Magenta
+    } else if (colorChoice < 0.66) {
+      colors[i * 3] = 0; colors[i * 3 + 1] = 1; colors[i * 3 + 2] = 1 // Cyan
+    } else {
+      colors[i * 3] = 0; colors[i * 3 + 1] = 1; colors[i * 3 + 2] = 0.5 // Green
+    }
   }
+
   particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  particleGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+
   const particleMat = new THREE.PointsMaterial({
-    color: 0xffd4a0,
-    size: 0.3,
+    size: 0.4,
+    vertexColors: true,
     transparent: true,
-    opacity: 0.4,
+    opacity: 0.8,
     sizeAttenuation: true
   })
   const particles = new THREE.Points(particleGeo, particleMat)
   scene.add(particles)
 
-  return { particles, sunMesh, glow }
+  // ─── Mountains in Background ────────────────────────────────
+  for (let i = 0; i < 12; i++) {
+    const angle = (i / 12) * Math.PI * 2
+    const dist = 120 + Math.random() * 30
+    const x = Math.cos(angle) * dist
+    const z = Math.sin(angle) * dist
+
+    const mountainGeo = new THREE.ConeGeometry(20 + Math.random() * 15, 30 + Math.random() * 20, 4)
+    const mountainMat = new THREE.MeshStandardMaterial({
+      color: 0x1a0a3e,
+      emissive: 0x4a0080,
+      emissiveIntensity: 0.3,
+      flatShading: true
+    })
+    const mountain = new THREE.Mesh(mountainGeo, mountainMat)
+    mountain.position.set(x, 15, z)
+    scene.add(mountain)
+
+    // Neon outline
+    const edges = new THREE.EdgesGeometry(mountainGeo)
+    const lineMat = new THREE.LineBasicMaterial({ color: 0xff00ff, transparent: true, opacity: 0.4 })
+    const wireframe = new THREE.LineSegments(edges, lineMat)
+    wireframe.position.copy(mountain.position)
+    scene.add(wireframe)
+  }
+
+  // ─── Road/Path Markers ──────────────────────────────────────
+  const pathMat = new THREE.MeshStandardMaterial({
+    color: 0x2d1b69,
+    emissive: 0x8800ff,
+    emissiveIntensity: 0.2
+  })
+
+  // Main roads
+  const roads = [
+    { x: 0, z: 0, w: 6, d: 120 },
+    { x: 0, z: 0, w: 120, d: 6 }
+  ]
+
+  roads.forEach(r => {
+    const geo = new THREE.PlaneGeometry(r.w, r.d)
+    const mesh = new THREE.Mesh(geo, pathMat)
+    mesh.rotation.x = -Math.PI / 2
+    mesh.position.set(r.x, 0.02, r.z)
+    scene.add(mesh)
+  })
+
+  return { particles, lights: [light1, light2, light3] }
 }

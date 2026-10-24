@@ -208,13 +208,6 @@ function checkZones() {
 }
 
 // ─── Populate Panels ──────────────────────────────────────────
-// Override closeZone to also hide testimonial panel
-const _origCloseZone = window.closeZone
-window.closeZone = () => {
-  _origCloseZone()
-  hideTestimonialPanel()
-}
-
 function populateAboutPanel() {
   const container = document.getElementById('about-content')
   if (!container) return

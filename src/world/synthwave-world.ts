@@ -24,7 +24,6 @@ export class SynthwaveWorld {
   private hemisphereLight!: THREE.HemisphereLight
 
   // Animation state
-  private planetOrbitAngle: number = 0
   private particlePositions!: Float32Array
 
   constructor(scene: THREE.Scene, camera: THREE.PerspectiveCamera, renderer: THREE.WebGLRenderer) {
@@ -460,7 +459,6 @@ export class SynthwaveWorld {
     }
 
     // Orbit planets slowly
-    this.planetOrbitAngle += 0.0003
     this.planets.forEach((p, i) => {
       p.position.y += Math.sin(time * 0.3 + i) * 0.05
       p.rotation.y += 0.002

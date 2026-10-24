@@ -568,7 +568,9 @@ window.show3D = () => {
 
 window.closeZone = () => {
   document.querySelectorAll('.zone-panel').forEach(p => p.classList.remove('active'))
+  document.querySelectorAll('.testimonial-panel').forEach(p => p.classList.remove('active'))
   activeZone = null
+  activeTestimonial = null
 }
 
 // ─── Init ─────────────────────────────────────────────────────
